@@ -1,17 +1,25 @@
 export default function Home() {
   return (
-    <main style={{minHeight: '100vh', background: '#080C10', color: '#E2EAF4', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
-      <div style={{textAlign: 'center'}}>
-        <h1 style={{fontSize: '2.5rem', fontWeight: '500', marginBottom: '1rem'}}>
-          Hackers<span style={{color: '#4A8CFF'}}>Harbor</span>
-        </h1>
-        <p style={{color: '#5A6E85', fontSize: '1.1rem', marginBottom: '2rem'}}>
-          Navigate your coding journey
-        </p>
-        <a href="#" style={{background: '#1549C2', color: 'white', padding: '12px 24px', borderRadius: '8px', fontSize: '14px', fontWeight: '500', textDecoration: 'none'}}>
-          Get started free
-        </a>
-      </div>
-    </main>
+    <div style={{background: '#ffffff', minHeight: '100vh', fontFamily: 'system-ui, sans-serif'}}>
+      
+      <nav style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 32px', height: '60px', borderBottom: '1px solid #E8EDF2', background: '#ffffff'}}>
+        <div style={{display: 'flex', alignItems: 'center', gap: '8px', fontSize: '18px', fontWeight: '600', color: '#0F1923'}}>
+        <img src="/logo.png" alt="HackersHarbor" style={{width: '48px', height: '48px'}} />
+          Hackers<span style={{color: '#1549C2'}}>Harbor</span>
+        </div>
+        <div style={{display: 'flex', gap: '8px'}}>
+          {['Learn', 'Roadmaps', 'Practice', 'Projects', 'Community'].map((item) => (
+            <a key={item} href="#" style={{fontSize: '14px', color: '#5A6E85', padding: '6px 12px', textDecoration: 'none'}}>{item}</a>
+          ))}
+        </div>
+        <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
+          <a href="#" style={{fontSize: '14px', color: '#5A6E85', textDecoration: 'none', padding: '6px 12px'}}>Log in</a>
+          <a href="#" style={{fontSize: '14px', color: '#ffffff', background: '#1549C2', padding: '8px 18px', borderRadius: '6px', textDecoration: 'none', fontWeight: '500'}}>Sign up</a>
+        </div>
+      </nav>
+
+      <p style={{textAlign: 'center', padding: '40px', color: '#5A6E85'}}>Hero section coming next...</p>
+
+    </div>
   )
 }
