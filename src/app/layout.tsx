@@ -17,11 +17,11 @@ export const metadata: Metadata = {
   description: "Learn software engineering, practice coding challenges, build real projects and get hired. HackersHarbor is the all-in-one developer learning platform built in India.",
   keywords: "learn coding, software engineering, coding challenges, programming, Python, SQL, DSA, web development, India",
   icons: {
-    icon: "/logo.png",
+    icon: "/favicon.ico",
   },
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html
       lang="en"
@@ -31,11 +31,3 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     </html>
   );
 }
-
-icons: {
-  icon: [
-    { url: "/favicon.ico", sizes: "any" },
-    { url: "/logo.png", type: "image/png" },
-  ],
-  apple: "/logo.png",
-},

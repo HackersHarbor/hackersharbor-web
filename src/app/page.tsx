@@ -169,7 +169,7 @@ function Hero() {
 
             <span>
               Join <strong>20,000+</strong> developers learning and growing
-              together 🚀
+              together
             </span>
           </div>
         </div>
@@ -182,7 +182,7 @@ function Hero() {
         </div>
 
         <div className="hero-streak-card">
-          <h3>Current Streak 🔥</h3>
+          <h3>Current Streak </h3>
           <div className="streak-empty" />
         </div>
       </div>
