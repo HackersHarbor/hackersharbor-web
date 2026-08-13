@@ -31,3 +31,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     </html>
   );
 }
+
+icons: {
+  icon: [
+    { url: "/favicon.ico", sizes: "any" },
+    { url: "/logo.png", type: "image/png" },
+  ],
+  apple: "/logo.png",
+},
