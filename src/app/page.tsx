@@ -196,13 +196,13 @@ TECHNOLOGY DATA
 
 const technologies = [
   { name: "Python", slug: "python", color: "3776AB" },
-  { name: "Java", slug: "openjdk", color: "ED8B00" },
+  { name: "Java", slug: "java", color: "ED8B00" },
   { name: "JavaScript", slug: "javascript", color: "F7DF1E" },
   { name: "C++", slug: "cplusplus", color: "00599C" },
   { name: "React", slug: "react", color: "61DAFB" },
   { name: "Next.js", slug: "nextdotjs", color: "111111" },
   { name: "SQL", slug: "mysql", color: "4479A1" },
-  { name: "AWS", slug: "amazonaws", color: "232F3E" },
+  { name: "AWS", slug: "amazonwebservices", color: "232F3E" },
   { name: "Docker", slug: "docker", color: "2496ED" },
   { name: "GitHub", slug: "github", color: "181717" },
   { name: "Node.js", slug: "nodedotjs", color: "339933" },
