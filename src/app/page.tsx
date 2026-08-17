@@ -103,8 +103,13 @@ function Navbar({
             <span className="theme-switch-knob"></span>
           </button>
 
-          <button className="login-button">Login</button>
-          <button className="signup-button">Signup</button>
+          <a href="/login" className="login-button">
+  Login
+</a>
+
+<a href="/signup" className="signup-button">
+  Signup
+</a>
         </div>
       </nav>
     </header>
@@ -196,7 +201,7 @@ TECHNOLOGY DATA
 
 const technologies = [
   { name: "Python", slug: "python", color: "3776AB" },
-  { name: "Java", slug: "java", color: "ED8B00" },
+  { name: "Java", slug: "java", color: "ED8B00"},
   { name: "JavaScript", slug: "javascript", color: "F7DF1E" },
   { name: "C++", slug: "cplusplus", color: "00599C" },
   { name: "React", slug: "react", color: "61DAFB" },
