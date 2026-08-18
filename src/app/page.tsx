@@ -83,8 +83,8 @@ function Navbar({
           <a href="#interview">Interview Prep</a>
           <a href="#community">Community</a>
 
-          <a href="#pricing" className="pro-button">
-            Pro
+          <a href="#pricing" className="Upgrade-button">
+            Upgrade
           </a>
         </div>
 

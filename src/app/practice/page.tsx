@@ -188,7 +188,7 @@ export default function Practice() {
 
   const [code, setCode] = useState(starterCode)
   const [output, setOutput] = useState('')
-  const [darkMode, setDarkMode] = useState(true)
+  const [darkMode, setDarkMode] = useState(false)
 
   const [solvedIds, setSolvedIds] = useState<number[]>([])
   const [submitted, setSubmitted] = useState(false)
