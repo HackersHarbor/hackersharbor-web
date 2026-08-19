@@ -23,6 +23,12 @@ import { usePythonWorker } from '@/components/dock/usePythonWorker'
 
 import { useDuckDB } from '@/components/dock/useDuckDB'
 
+import { SmartTable } from '@/components/dock/SmartTable'
+
+import { SQLChart } from '@/components/dock/SQLChart'
+
+import { SmartInsight } from '@/components/dock/SmartInsight'
+
 /* -------------------------------------------------------------------------- */
 /*                                  STORAGE                                   */
 /* -------------------------------------------------------------------------- */
@@ -93,6 +99,11 @@ const cellColor: Record<
   markdown: '#B7791F',
 }
 
+type ChartFilter = {
+  column: string
+  value: unknown
+}
+
 function formatExecutionTime(
   value?: number,
 ) {
@@ -124,6 +135,16 @@ export default function Dock() {
     useState<Cell[]>(
       initialCells,
     )
+    
+    const [
+      chartFilters,
+      setChartFilters,
+    ] = useState<
+      Record<
+        number,
+        ChartFilter | null
+      >
+    >({})
 
   const [
     notebookName,
@@ -488,6 +509,18 @@ export default function Dock() {
             ),
         )
 
+        setChartFilters(
+          (previous) => {
+            if (!(id in previous)) {
+              return previous
+            }
+
+            const next = { ...previous }
+            delete next[id]
+            return next
+          },
+        )
+
         setStatus(
           'Cell deleted.',
         )
@@ -816,6 +849,13 @@ export default function Dock() {
 
           return
         }
+
+        setChartFilters(
+          (previous) => ({
+            ...previous,
+            [cell.id]: null,
+          }),
+        )
 
         setCells(
           (previous) =>
@@ -1308,6 +1348,8 @@ export default function Dock() {
                 importedCells,
               )
 
+              setChartFilters({})
+
               setStatus(
                 'Notebook imported successfully.',
               )
@@ -1350,6 +1392,8 @@ export default function Dock() {
       setCells(
         initialCells,
       )
+
+      setChartFilters({})
 
       setStatus(
         'Notebook reset.',
@@ -1560,6 +1604,51 @@ export default function Dock() {
         }
       },
       [getTables],
+    )
+
+  /* ------------------------------------------------------------------------ */
+  /*                         CHART ↔ TABLE FILTER                             */
+  /* ------------------------------------------------------------------------ */
+
+  const handleChartPointClick =
+    useCallback(
+      (
+        cellId: number,
+        column: string,
+        value: unknown,
+      ) => {
+        setChartFilters(
+          (previous) => ({
+            ...previous,
+            [cellId]: {
+              column,
+              value,
+            },
+          }),
+        )
+
+        setStatus(
+          `Table filtered by ${column} = ${String(value)}`
+        )
+      },
+      [],
+    )
+
+  const clearChartFilter =
+    useCallback(
+      (cellId: number) => {
+        setChartFilters(
+          (previous) => ({
+            ...previous,
+            [cellId]: null,
+          }),
+        )
+
+        setStatus(
+          'Chart filter cleared.',
+        )
+      },
+      [],
     )
 
   /* ------------------------------------------------------------------------ */
@@ -3695,130 +3784,93 @@ export default function Dock() {
 
                     {/* TABLE */}
 
-                    {cell
-                      .output
-                      .success &&
-                      cell.output
-                        .type ===
-                        'table' &&
-                      cell.output
-                        .table && (
-                        <div
-                          style={{
-                            overflowX:
-                              'auto',
+{cell.output.success &&
+  cell.output.type === 'table' &&
+  cell.output.table && (
+    <>
+      <SmartTable
+        columns={
+          cell.output.table.columns
+        }
+        rows={
+          cell.output.table.rows
+        }
+        darkMode={
+          darkMode
+        }
+        pageSize={25}
+        chartFilter={
+          chartFilters[cell.id] ??
+          null
+        }
+        onClearChartFilter={() => {
+          setChartFilters(
+            (previous) => ({
+              ...previous,
+              [cell.id]: null,
+            }),
+          )
+        }}
+      />
 
-                            padding:
-                              '10px',
-                          }}
-                        >
-                          <table
-                            style={{
-                              width:
-                                '100%',
+      <SmartInsight
+        columns={
+          cell.output.table.columns
+        }
+        rows={
+          cell.output.table.rows
+        }
+        darkMode={
+          darkMode
+        }
+      />
 
-                              borderCollapse:
-                                'collapse',
+      <SQLChart
+        columns={
+          cell.output.table.columns
+        }
+        rows={
+          cell.output.table.rows
+        }
+        darkMode={
+          darkMode
+        }
+        onPointClick={(
+          column,
+          value,
+        ) =>
+          handleChartPointClick(
+            cell.id,
+            column,
+            value,
+          )
+        }
+      />
+    </>
+  )}
 
-                              fontSize:
-                                '11px',
-                            }}
-                          >
-                            <thead>
-                              <tr>
-                                {cell
-                                  .output
-                                  .table
-                                  .columns
-                                  .map(
-                                    (
-                                      column,
-                                    ) => (
-                                      <th
-                                        key={
-                                          column
-                                        }
-                                        style={{
-                                          textAlign:
-                                            'left',
+{/* JSON */}
 
-                                          padding:
-                                            '7px 9px',
-
-                                          borderBottom:
-                                            `1px solid ${colors.border}`,
-
-                                          color:
-                                            colors.secondaryText,
-
-                                          fontWeight:
-                                            650,
-
-                                          whiteSpace:
-                                            'nowrap',
-                                        }}
-                                      >
-                                        {
-                                          column
-                                        }
-                                      </th>
-                                    ),
-                                  )}
-                              </tr>
-                            </thead>
-
-                            <tbody>
-                              {cell
-                                .output
-                                .table
-                                .rows
-                                .map(
-                                  (
-                                    row,
-                                    rowIndex,
-                                  ) => (
-                                    <tr
-                                      key={
-                                        rowIndex
-                                      }
-                                    >
-                                      {row.map(
-                                        (
-                                          value,
-                                          columnIndex,
-                                        ) => (
-                                          <td
-                                            key={
-                                              columnIndex
-                                            }
-                                            style={{
-                                              padding:
-                                                '7px 9px',
-
-                                              borderBottom:
-                                                `1px solid ${colors.subtleBorder}`,
-
-                                              color:
-                                                colors.primaryText,
-
-                                              whiteSpace:
-                                                'nowrap',
-                                            }}
-                                          >
-                                            {String(
-                                              value ??
-                                                '',
-                                            )}
-                                          </td>
-                                        ),
-                                      )}
-                                    </tr>
-                                  ),
-                                )}
-                            </tbody>
-                          </table>
-                        </div>
-                      )}
+{cell.output.success &&
+  cell.output.type === 'json' && (
+    <pre
+      style={{
+        margin: 0,
+        padding: '12px 14px',
+        whiteSpace: 'pre-wrap',
+        overflowX: 'auto',
+        color: colors.primaryText,
+        fontFamily:
+          "'JetBrains Mono', monospace",
+        fontSize: '11px',
+        lineHeight: '1.6',
+      }}
+    >
+      {
+        cell.output.text
+      }
+    </pre>
+  )}
 
                     {/* JSON */}
 
