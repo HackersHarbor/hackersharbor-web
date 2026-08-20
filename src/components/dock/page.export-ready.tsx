@@ -1,8 +1,7 @@
-﻿'use client'
+'use client'
 
 import {
   ChangeEvent,
-  KeyboardEvent,
   useCallback,
   useEffect,
   useMemo,
@@ -26,24 +25,11 @@ import { useDuckDB } from '@/components/dock/useDuckDB'
 
 import { SmartTable } from '@/components/dock/SmartTable'
 
-import {
-  SQLChart,
-  ChartState,
-} from '@/components/dock/SQLChart'
+import { SQLChart } from '@/components/dock/SQLChart'
 
 import { SmartInsight } from '@/components/dock/SmartInsight'
 
 import { ExportActions } from '@/components/dock/ExportActions'
-
-import { PDFReportButton } from '@/components/dock/PDFReportButton'
-
-import { AnalysisHistory } from '@/components/dock/AnalysisHistory'
-import { FusionWorkspace } from '@/components/dock/FusionWorkspace'
-
-import { ColumnIntelligence } from '@/components/dock/ColumnIntelligence'
-import { AdvancedAIInsights } from '@/components/dock/AdvancedAIInsights'
-import { Dashboard } from '@/components/dock/Dashboard'
-import type { DashboardPin } from '@/components/dock/Dashboard'
 
 /* -------------------------------------------------------------------------- */
 /*                                  STORAGE                                   */
@@ -115,81 +101,6 @@ const cellColor: Record<
   markdown: '#B7791F',
 }
 
-function formatSQL(
-  sql: string,
-) {
-  const normalized =
-    sql
-      .replace(
-        /\r\n/g,
-        '\n',
-      )
-      .replace(
-        /[ \t]+/g,
-        ' ',
-      )
-      .replace(
-        /\n{3,}/g,
-        '\n\n',
-      )
-      .trim()
-
-  if (!normalized) {
-    return ''
-  }
-
-  return normalized
-    .replace(
-      /\s+(FROM|WHERE|GROUP BY|HAVING|ORDER BY|LIMIT|OFFSET|UNION|EXCEPT|INTERSECT)\s+/gi,
-      '\n$1 ',
-    )
-    .replace(
-      /\s+(LEFT JOIN|RIGHT JOIN|FULL JOIN|INNER JOIN|OUTER JOIN|CROSS JOIN|JOIN)\s+/gi,
-      '\n$1 ',
-    )
-    .replace(
-      /\s+(AND|OR)\s+/gi,
-      '\n  $1 ',
-    )
-    .replace(
-      /\bSELECT\s+/i,
-      'SELECT\n  ',
-    )
-    .replace(
-      /,\s*(?=[A-Za-z_"`])/g,
-      ',\n  ',
-    )
-    .replace(
-      /\n  FROM /g,
-      '\nFROM ',
-    )
-    .replace(
-      /\n  WHERE /g,
-      '\nWHERE ',
-    )
-    .replace(
-      /\n  GROUP BY /g,
-      '\nGROUP BY ',
-    )
-    .replace(
-      /\n  HAVING /g,
-      '\nHAVING ',
-    )
-    .replace(
-      /\n  ORDER BY /g,
-      '\nORDER BY ',
-    )
-    .replace(
-      /\n  LIMIT /g,
-      '\nLIMIT ',
-    )
-    .replace(
-      /\n  OFFSET /g,
-      '\nOFFSET ',
-    )
-    .trim()
-}
-
 function formatExecutionTime(
   value?: number,
 ) {
@@ -206,64 +117,6 @@ function formatExecutionTime(
   return `${(
     value / 1000
   ).toFixed(2)} s`
-}
-
-/* -------------------------------------------------------------------------- */
-/*                              SHARE HELPERS                                */
-/* -------------------------------------------------------------------------- */
-
-function encodeShareState(value: unknown) {
-  const json = JSON.stringify(value)
-  const bytes = new TextEncoder().encode(json)
-  let binary = ''
-
-  for (const byte of bytes) {
-    binary += String.fromCharCode(byte)
-  }
-
-  return btoa(binary)
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=+$/g, '')
-}
-
-function decodeShareState(value: string) {
-  const padded = value
-    .replace(/-/g, '+')
-    .replace(/_/g, '/')
-    .padEnd(
-      Math.ceil(value.length / 4) * 4,
-      '=',
-    )
-
-  const binary = atob(padded)
-  const bytes = new Uint8Array(binary.length)
-
-  for (let index = 0; index < binary.length; index += 1) {
-    bytes[index] = binary.charCodeAt(index)
-  }
-
-  return JSON.parse(
-    new TextDecoder().decode(bytes),
-  )
-}
-
-function isShareSnapshot(value: unknown): value is {
-  name?: string
-  cells: Cell[]
-  chartStates?: Record<number, ChartState | null>
-  dashboardPins?: DashboardPin[]
-  darkMode?: boolean
-} {
-  if (!value || typeof value !== 'object') {
-    return false
-  }
-
-  const snapshot = value as {
-    cells?: unknown
-  }
-
-  return Array.isArray(snapshot.cells)
 }
 
 /* -------------------------------------------------------------------------- */
@@ -303,87 +156,6 @@ export default function Dock() {
     column: string
     value: unknown
   } | null>(null)
-
-  const [
-    chartStates,
-    setChartStates,
-  ] = useState<
-    Record<
-      number,
-      ChartState | null
-    >
-  >({})
-
-  const [
-    dashboardPins,
-    setDashboardPins,
-  ] = useState<
-    DashboardPin[]
-  >([])
-
-  const [
-    dashboardMode,
-    setDashboardMode,
-  ] = useState(false)
-
-  const [fusionMode, setFusionMode] = useState(false)
-
-  const [
-    dashboardHydrated,
-    setDashboardHydrated,
-  ] = useState(false)
-
-  useEffect(() => {
-    try {
-      const stored =
-        window.localStorage.getItem(
-          'hackersharbor-dock-dashboard',
-        )
-
-      if (stored) {
-        const parsed =
-          JSON.parse(
-            stored,
-          )
-
-        if (
-          Array.isArray(
-            parsed,
-          )
-        ) {
-          setDashboardPins(
-            parsed,
-          )
-        }
-      }
-    } catch {
-      // Ignore invalid local dashboard state.
-    } finally {
-      setDashboardHydrated(
-        true,
-      )
-    }
-  }, [])
-
-  useEffect(() => {
-    if (!dashboardHydrated) {
-      return
-    }
-
-    try {
-      window.localStorage.setItem(
-        'hackersharbor-dock-dashboard',
-        JSON.stringify(
-          dashboardPins,
-        ),
-      )
-    } catch {
-      // Ignore storage failures.
-    }
-  }, [
-    dashboardPins,
-    dashboardHydrated,
-  ])
 
   const [saving, setSaving] =
     useState(false)
@@ -521,75 +293,6 @@ export default function Dock() {
        * Ignore invalid
        * localStorage data.
        */
-    }
-  }, [])
-
-  /* ------------------------------------------------------------------------ */
-  /*                            RESTORE SHARED STATE                          */
-  /* ------------------------------------------------------------------------ */
-
-  useEffect(() => {
-    const hash = window.location.hash
-
-    if (!hash.startsWith('#share=')) {
-      return
-    }
-
-    try {
-      const encoded = hash.slice('#share='.length)
-      const parsed = decodeShareState(encoded)
-
-      if (!isShareSnapshot(parsed)) {
-        return
-      }
-
-      setNotebookName(
-        typeof parsed.name === 'string'
-          ? parsed.name
-          : 'Shared analysis',
-      )
-
-      setCells(
-        parsed.cells.map(
-          (cell) => ({
-            ...cell,
-            running: false,
-          }),
-        ),
-      )
-
-      if (parsed.chartStates) {
-        setChartStates(
-          parsed.chartStates,
-        )
-      }
-
-      if (Array.isArray(parsed.dashboardPins)) {
-        setDashboardPins(
-          parsed.dashboardPins,
-        )
-        setDashboardMode(
-          parsed.dashboardPins.length > 0,
-        )
-      }
-
-      if (typeof parsed.darkMode === 'boolean') {
-        setDarkMode(parsed.darkMode)
-      }
-
-      setStatus(
-        'Shared analysis loaded.',
-      )
-
-      window.history.replaceState(
-        null,
-        '',
-        `${window.location.pathname}${window.location.search}`,
-      )
-    } catch {
-      setStatus(
-        'This share link is invalid or incomplete.',
-      )
     }
   }, [])
 
@@ -1183,27 +886,6 @@ export default function Dock() {
               : current,
           )
 
-          setChartStates(
-            (current) => {
-              if (
-                !Object.prototype.hasOwnProperty.call(
-                  current,
-                  cell.id,
-                )
-              ) {
-                return current
-              }
-
-              const next = {
-                ...current,
-              }
-
-              delete next[cell.id]
-
-              return next
-            },
-          )
-
           if (
             result.success
           ) {
@@ -1265,33 +947,6 @@ export default function Dock() {
         duckDBReady,
         executeSQL,
       ],
-    )
-
-  const handleCellKeyDown =
-    useCallback(
-      (
-        event: KeyboardEvent<HTMLTextAreaElement>,
-        cell: Cell,
-      ) => {
-        if (
-          cell.type !== 'sql'
-        ) {
-          return
-        }
-
-        if (
-          event.shiftKey &&
-          event.key === 'Enter'
-        ) {
-          event.preventDefault()
-          event.stopPropagation()
-
-          void runSQLCell(
-            cell,
-          )
-        }
-      },
-      [runSQLCell],
     )
 
   /* ------------------------------------------------------------------------ */
@@ -1738,126 +1393,47 @@ export default function Dock() {
         setSharing(true)
 
         try {
-          const snapshot = {
-            version: 1,
-            name: notebookName,
-            darkMode,
-            cells: cells.map(
-              (cell) => ({
-                ...cell,
-                running: false,
-              }),
-            ),
-            chartStates,
-            dashboardPins,
-          }
+          const snapshot =
+            JSON.stringify(
+              {
+                name:
+                  notebookName,
 
-          const encoded =
-            encodeShareState(snapshot)
+                cells:
+                  cells.map(
+                    (cell) => ({
+                      id:
+                        cell.id,
 
-          const shareURL =
-            `${window.location.origin}${window.location.pathname}#share=${encoded}`
+                      type:
+                        cell.type,
 
-          if (shareURL.length > 50000) {
-            setStatus(
-              'This analysis is too large to fit safely in a share link.',
-            )
-            return
-          }
-
-          let copied = false
-
-          if (
-            typeof navigator !==
-              'undefined' &&
-            navigator.clipboard &&
-            window.isSecureContext
-          ) {
-            try {
-              await navigator.clipboard.writeText(
-                shareURL,
-              )
-              copied = true
-            } catch {
-              copied = false
-            }
-          }
-
-          if (!copied) {
-            const textarea =
-              document.createElement(
-                'textarea',
-              )
-
-            textarea.value =
-              shareURL
-            textarea.setAttribute(
-              'readonly',
-              '',
-            )
-            textarea.style.position =
-              'fixed'
-            textarea.style.left =
-              '-9999px'
-            textarea.style.top =
-              '0'
-            textarea.style.opacity =
-              '0'
-
-            document.body.appendChild(
-              textarea,
+                      code:
+                        cell.code,
+                    }),
+                  ),
+              },
+              null,
+              2,
             )
 
-            textarea.focus()
-            textarea.select()
-
-            try {
-              copied =
-                document.execCommand(
-                  'copy',
-                )
-            } finally {
-              textarea.remove()
-            }
-          }
-
-          if (copied) {
-            setStatus(
-              'Share link copied to clipboard.',
-            )
-          } else {
-            window.prompt(
-              'Copy this share link:',
-              shareURL,
-            )
-
-            setStatus(
-              'Share link generated.',
-            )
-          }
-        } catch (error) {
-          console.error(
-            'Share analysis failed:',
-            error,
+          await navigator.clipboard.writeText(
+            snapshot,
           )
-  
-          const message =
-            error instanceof Error
-              ? error.message
-              : String(error)
-  
+
           setStatus(
-            `Share failed: ${message}`,
+            'Notebook snapshot copied to clipboard.',
           )
-        } finally {
-          setSharing(false)
+        } catch {
+          setStatus(
+            'Unable to copy notebook.',
+          )
         }
+
+        setSharing(false)
       },
       [
         cells,
-        chartStates,
-        dashboardPins,
-        darkMode,
         notebookName,
         sharing,
       ],
@@ -2007,481 +1583,6 @@ export default function Dock() {
         }
       },
       [getTables],
-    )
-
-  /* ------------------------------------------------------------------------ */
-  /*                         OPEN SAVED ANALYSIS                              */
-  /* ------------------------------------------------------------------------ */
-
-  const clearSQLCell =
-    useCallback(
-      (id: number) => {
-        setCells(
-          (previous) =>
-            previous.map(
-              (cell) =>
-                cell.id === id
-                  ? {
-                      ...cell,
-                      code: '',
-                      output: null,
-                      running: false,
-                    }
-                  : cell,
-            ),
-        )
-
-        setChartFilter(
-          (current) =>
-            current?.cellId === id
-              ? null
-              : current,
-        )
-
-        setChartStates(
-          (current) => {
-            if (
-              !Object.prototype.hasOwnProperty.call(
-                current,
-                id,
-              )
-            ) {
-              return current
-            }
-
-            const next = {
-              ...current,
-            }
-
-            delete next[id]
-
-            return next
-          },
-        )
-
-        setStatus(
-          'SQL cell cleared.',
-        )
-      },
-      [],
-    )
-
-  const duplicateSQLCell =
-    useCallback(
-      (id: number) => {
-        const sourceCell =
-          cells.find(
-            (cell) =>
-              cell.id === id,
-          )
-
-        if (
-          !sourceCell ||
-          sourceCell.type !==
-            'sql'
-        ) {
-          return
-        }
-
-        const newId =
-          Date.now() +
-          Math.floor(
-            Math.random() *
-              1000,
-          )
-
-        const duplicatedCell: Cell =
-          {
-            id: newId,
-            type: 'sql',
-            code:
-              sourceCell.code,
-            output: null,
-            running: false,
-          }
-
-        setCells(
-          (previous) => {
-            const index =
-              previous.findIndex(
-                (cell) =>
-                  cell.id === id,
-              )
-
-            if (
-              index < 0
-            ) {
-              return [
-                ...previous,
-                duplicatedCell,
-              ]
-            }
-
-            const next =
-              [...previous]
-
-            next.splice(
-              index + 1,
-              0,
-              duplicatedCell,
-            )
-
-            return next
-          },
-        )
-
-        setStatus(
-          'SQL cell duplicated.',
-        )
-      },
-      [cells],
-    )
-
-  /* ------------------------------------------------------------------------ */
-  /*                           DASHBOARD ACTIONS                              */
-  /* ------------------------------------------------------------------------ */
-
-  const toggleDashboardPin =
-    useCallback(
-      (
-        cell: Cell,
-      ) => {
-        if (
-          cell.type !== 'sql' ||
-          !cell.output?.success ||
-          cell.output.type !==
-            'table' ||
-          !cell.output.table
-        ) {
-          return
-        }
-
-        setDashboardPins(
-          (current) => {
-            const existing =
-              current.find(
-                (pin) =>
-                  pin.cellId ===
-                  cell.id,
-              )
-
-            if (existing) {
-              setStatus(
-                'Removed from dashboard.',
-              )
-
-              return current.filter(
-                (pin) =>
-                  pin.cellId !==
-                  cell.id,
-              )
-            }
-
-            const pin: DashboardPin =
-              {
-                id:
-                  `${cell.id}-${Date.now()}`,
-                cellId:
-                  cell.id,
-                title:
-                  `Analysis ${cell.id}`,
-                columns:
-                  cell.output
-                    .table
-                    .columns,
-                rows:
-                  cell.output
-                    .table
-                    .rows,
-                chartState:
-                  chartStates[
-                    cell.id
-                  ] ?? null,
-              }
-
-            setDashboardMode(
-              true,
-            )
-
-            setStatus(
-              'Added to dashboard.',
-            )
-
-            return [
-              ...current,
-              pin,
-            ]
-          },
-        )
-      },
-      [chartStates],
-    )
-
-  const updateDashboardChartState =
-    useCallback(
-      (
-        cellId: number,
-        state: ChartState,
-      ) => {
-        setDashboardPins(
-          (current) => {
-            let changed = false
-
-            const next =
-              current.map(
-                (pin) => {
-                  if (
-                    pin.cellId !==
-                    cellId
-                  ) {
-                    return pin
-                  }
-
-                  const previous =
-                    pin.chartState
-
-                  const unchanged =
-                    previous?.chartType ===
-                      state.chartType &&
-                    previous?.xColumn ===
-                      state.xColumn &&
-                    previous?.yColumn ===
-                      state.yColumn
-
-                  if (
-                    unchanged
-                  ) {
-                    return pin
-                  }
-
-                  changed = true
-
-                  return {
-                    ...pin,
-                    chartState:
-                      state,
-                  }
-                },
-              )
-
-            return changed
-              ? next
-              : current
-          },
-        )
-      },
-      [],
-    )
-
-  const removeDashboardPin =
-    useCallback(
-      (pinId: string) => {
-        setDashboardPins(
-          (current) =>
-            current.filter(
-              (pin) =>
-                pin.id !== pinId,
-            ),
-        )
-
-        setStatus(
-          'Removed from dashboard.',
-        )
-      },
-      [],
-    )
-
-  const clearDashboard =
-    useCallback(() => {
-      setDashboardPins([])
-
-      setStatus(
-        'Dashboard cleared.',
-      )
-    }, [])
-
-  /* ------------------------------------------------------------------------ */
-  /*                         DUPLICATE ANALYSIS                              */
-  /* ------------------------------------------------------------------------ */
-
-  const duplicateSavedAnalysis =
-    useCallback(
-      (
-        analysis: {
-          id: number
-          title: string
-          query: string
-          columns: string[]
-          rows: unknown[][]
-          chartState?: ChartState | null
-        },
-        newId: number,
-      ) => {
-        const restoredOutput =
-          {
-            success: true,
-            type: 'table',
-            table: {
-              columns:
-                analysis.columns,
-              rows:
-                analysis.rows,
-            },
-          } as ExecutionResult
-
-        setChartFilter(null)
-
-        setChartStates(
-          (current) => ({
-            ...current,
-            [newId]:
-              analysis.chartState ??
-              null,
-          }),
-        )
-
-        setCells(
-          (previous) => [
-            ...previous,
-            {
-              id: newId,
-              type: 'sql',
-              code:
-                analysis.query,
-              output:
-                restoredOutput,
-              running:
-                false,
-            },
-          ],
-        )
-
-        setStatus(
-          'Analysis duplicated.',
-        )
-
-        window.setTimeout(
-          () => {
-            const element =
-              document.getElementById(
-                `dock-cell-${newId}`,
-              )
-
-            element?.scrollIntoView(
-              {
-                behavior:
-                  'smooth',
-                block:
-                  'center',
-              },
-            )
-          },
-          50,
-        )
-      },
-      [],
-    )
-
-  const openSavedAnalysis =
-    useCallback(
-      (analysis: {
-        id: number
-        query: string
-        columns: string[]
-        rows: unknown[][]
-        chartState?: ChartState | null
-      }) => {
-        const restoredOutput =
-          {
-            success: true,
-            type: 'table',
-            table: {
-              columns:
-                analysis.columns,
-              rows:
-                analysis.rows,
-            },
-          } as ExecutionResult
-
-        setChartFilter(null)
-
-        setChartStates(
-          (current) => ({
-            ...current,
-            [analysis.id]:
-              analysis.chartState ?? null,
-          }),
-        )
-
-        setCells(
-          (previous) => {
-            const exists =
-              previous.some(
-                (cell) =>
-                  cell.id ===
-                  analysis.id,
-              )
-
-            if (exists) {
-              return previous.map(
-                (cell) =>
-                  cell.id ===
-                  analysis.id
-                    ? {
-                        ...cell,
-                        type: 'sql',
-                        code:
-                          analysis.query,
-                        output:
-                          restoredOutput,
-                        running:
-                          false,
-                      }
-                    : cell,
-              )
-            }
-
-            return [
-              ...previous,
-              {
-                id:
-                  analysis.id,
-                type: 'sql',
-                code:
-                  analysis.query,
-                output:
-                  restoredOutput,
-                running:
-                  false,
-              },
-            ]
-          },
-        )
-
-        setStatus(
-          'Saved analysis reopened.',
-        )
-
-        window.setTimeout(
-          () => {
-            const element =
-              document.getElementById(
-                `dock-cell-${analysis.id}`,
-              )
-
-            element?.scrollIntoView(
-              {
-                behavior:
-                  'smooth',
-                block:
-                  'center',
-              },
-            )
-          },
-          50,
-        )
-      },
-      [],
     )
 
   /* ------------------------------------------------------------------------ */
@@ -3616,7 +2717,6 @@ export default function Dock() {
 
               <button
                 type="button"
-                title="Share analysis"
                 onClick={
                   shareNotebook
                 }
@@ -3658,34 +2758,7 @@ export default function Dock() {
               >
                 {sharing
                   ? 'Sharing...'
-                  : 'Share analysis'}
-              </button>
-
-              <button
-                type="button"
-                title="Open Harbor Fusion"
-                onClick={() =>
-                  setFusionMode(true)
-                }
-                style={{
-                  fontSize: '11px',
-                  fontWeight: 700,
-                  color: fusionMode
-                    ? '#FFFFFF'
-                    : colors.blue,
-                  background: fusionMode
-                    ? colors.blue
-                    : darkMode
-                      ? '#10233D'
-                      : '#EFF6FF',
-                  border: `1px solid ${colors.blue}`,
-                  borderRadius: '5px',
-                  padding: '6px 12px',
-                  cursor: 'pointer',
-                  fontFamily: 'inherit',
-                }}
-              >
-                Fusion
+                  : 'Share'}
               </button>
 
               <button
@@ -4067,52 +3140,6 @@ export default function Dock() {
 
             <button
               type="button"
-              onClick={() =>
-                setDashboardMode(
-                  (current) =>
-                    !current,
-                )
-              }
-              style={{
-                fontSize:
-                  '11px',
-                fontWeight:
-                  600,
-                padding:
-                  '6px 12px',
-                borderRadius:
-                  '5px',
-                border:
-                  `1px solid ${
-                    dashboardMode
-                      ? colors.blue
-                      : colors.border
-                  }`,
-                cursor:
-                  'pointer',
-                background:
-                  dashboardMode
-                    ? colors.blue
-                    : colors.card,
-                color:
-                  dashboardMode
-                    ? '#FFFFFF'
-                    : colors.primaryText,
-                fontFamily:
-                  'inherit',
-              }}
-            >
-              {dashboardMode
-                ? 'Hide dashboard'
-                : 'Dashboard'}
-              {dashboardPins.length >
-                0
-                ? ` · ${dashboardPins.length}`
-                : ''}
-            </button>
-
-            <button
-              type="button"
               onClick={
                 runAll
               }
@@ -4153,82 +3180,6 @@ export default function Dock() {
           </div>
 
           {/* ============================================================ */}
-          {/* ANALYSIS HISTORY                                             */}
-          {/* ============================================================ */}
-
-          <AnalysisHistory
-            cells={cells}
-            darkMode={darkMode}
-            chartStates={chartStates}
-            onOpenAnalysis={
-              openSavedAnalysis
-            }
-            onDuplicateAnalysis={
-              duplicateSavedAnalysis
-            }
-          />
-
-          {fusionMode && (
-            <FusionWorkspace
-              cells={cells}
-              darkMode={darkMode}
-              colors={colors}
-              chartStates={chartStates}
-              dashboardPins={dashboardPins}
-              onUpdateCode={updateCode}
-              onRunCell={runCell}
-              onChartStateChange={(cellId, state) => {
-                setChartStates((current) => {
-                  const previous = current[cellId]
-                  if (
-                    previous?.chartType === state.chartType &&
-                    previous?.xColumn === state.xColumn &&
-                    previous?.yColumn === state.yColumn
-                  ) {
-                    return current
-                  }
-                  return { ...current, [cellId]: state }
-                })
-                updateDashboardChartState(cellId, state)
-              }}
-              onPointClick={(cellId, column, value) =>
-                setChartFilter({ cellId, column, value })
-              }
-              onRemoveDashboardPin={removeDashboardPin}
-              onClearDashboard={clearDashboard}
-              onDashboardChartStateChange={updateDashboardChartState}
-              onOpenAnalysis={openSavedAnalysis}
-              onDuplicateAnalysis={duplicateSavedAnalysis}
-            />
-          )}
-
-          <div
-            style={{
-              display: fusionMode ? 'none' : 'block',
-            }}
-          >
-
-          {dashboardMode && (
-            <Dashboard
-              pins={
-                dashboardPins
-              }
-              darkMode={
-                darkMode
-              }
-              onRemovePin={
-                removeDashboardPin
-              }
-              onClear={
-                clearDashboard
-              }
-              onChartStateChange={
-                updateDashboardChartState
-              }
-            />
-          )}
-
-          {/* ============================================================ */}
           {/* CELLS                                                        */}
           {/* ============================================================ */}
 
@@ -4238,7 +3189,6 @@ export default function Dock() {
               index,
             ) => (
               <div
-                id={`dock-cell-${cell.id}`}
                 key={
                   cell.id
                 }
@@ -4516,205 +3466,6 @@ export default function Dock() {
                   </div>
                 </div>
 
-                {cell.type ===
-                  'sql' && (
-                  <div
-                    style={{
-                      display:
-                        'flex',
-                      alignItems:
-                        'center',
-                      justifyContent:
-                        'space-between',
-                      gap:
-                        '8px',
-                      padding:
-                        '7px 10px',
-                      borderTop:
-                        `1px solid ${colors.border}`,
-                      borderBottom:
-                        `1px solid ${colors.border}`,
-                      background:
-                        colors.card,
-                      flexWrap:
-                        'wrap',
-                    }}
-                  >
-                    <div
-                      style={{
-                        display:
-                          'flex',
-                        alignItems:
-                          'center',
-                        gap:
-                        '6px',
-                        flexWrap:
-                          'wrap',
-                      }}
-                    >
-                      <span
-                        style={{
-                          color:
-                            colors.mutedText,
-                          fontSize:
-                            '9px',
-                          fontWeight:
-                            700,
-                          letterSpacing:
-                            '0.06em',
-                          textTransform:
-                            'uppercase',
-                          marginRight:
-                            '2px',
-                        }}
-                      >
-                        SQL
-                      </span>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const formatted =
-                            formatSQL(
-                              cell.code,
-                            )
-
-                          updateCode(
-                            cell.id,
-                            formatted,
-                          )
-
-                          setStatus(
-                            'SQL formatted.',
-                          )
-                        }}
-                        disabled={
-                          cell.running
-                        }
-                        style={{
-                          fontSize:
-                            '10px',
-                          color:
-                            colors.primaryText,
-                          background:
-                            colors.input,
-                          border:
-                            `1px solid ${colors.border}`,
-                          borderRadius:
-                            '4px',
-                          padding:
-                            '5px 8px',
-                          cursor:
-                            cell.running
-                              ? 'not-allowed'
-                              : 'pointer',
-                          fontFamily:
-                            'inherit',
-                          opacity:
-                            cell.running
-                              ? 0.55
-                              : 1,
-                        }}
-                      >
-                        Format SQL
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() =>
-                          duplicateSQLCell(
-                            cell.id,
-                          )
-                        }
-                        disabled={
-                          cell.running
-                        }
-                        style={{
-                          fontSize:
-                            '10px',
-                          color:
-                            colors.primaryText,
-                          background:
-                            colors.input,
-                          border:
-                            `1px solid ${colors.border}`,
-                          borderRadius:
-                            '4px',
-                          padding:
-                            '5px 8px',
-                          cursor:
-                            cell.running
-                              ? 'not-allowed'
-                              : 'pointer',
-                          fontFamily:
-                            'inherit',
-                          opacity:
-                            cell.running
-                              ? 0.55
-                              : 1,
-                        }}
-                      >
-                        Duplicate
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() =>
-                          clearSQLCell(
-                            cell.id,
-                          )
-                        }
-                        disabled={
-                          cell.running
-                        }
-                        style={{
-                          fontSize:
-                            '10px',
-                          color:
-                            colors.danger,
-                          background:
-                            'transparent',
-                          border:
-                            `1px solid ${
-                              darkMode
-                                ? '#3A2024'
-                                : '#F1C9CE'
-                            }`,
-                          borderRadius:
-                            '4px',
-                          padding:
-                            '5px 8px',
-                          cursor:
-                            cell.running
-                              ? 'not-allowed'
-                              : 'pointer',
-                          fontFamily:
-                            'inherit',
-                          opacity:
-                            cell.running
-                              ? 0.55
-                              : 1,
-                        }}
-                      >
-                        Clear
-                      </button>
-                    </div>
-
-                    <span
-                      style={{
-                        color:
-                          colors.mutedText,
-                        fontSize:
-                          '9px',
-                        whiteSpace:
-                          'nowrap',
-                      }}
-                    >
-                      Shift + Enter to run
-                    </span>
-                  </div>
-                )}
-
                 {/* CODE EDITOR */}
 
                 <textarea
@@ -4728,14 +3479,6 @@ export default function Dock() {
                       cell.id,
                       event.target
                         .value,
-                    )
-                  }
-                  onKeyDown={(
-                    event,
-                  ) =>
-                    handleCellKeyDown(
-                      event,
-                      cell,
                     )
                   }
                   spellCheck={
@@ -4984,111 +3727,20 @@ export default function Dock() {
   cell.output
     .table && (
     <>
-      {/* EXPORTS */}
-
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
-          flexWrap: 'wrap',
-        }}
-      >
-        <ExportActions
-          columns={
-            cell.output.table
-              .columns
-          }
-          rows={
-            cell.output.table
-              .rows
-          }
-          darkMode={
-            darkMode
-          }
-          filename={
-            `hackersharbor-results-${cell.id}.csv`
-          }
-        />
-
-        <PDFReportButton
-          columns={
-            cell.output.table
-              .columns
-          }
-          rows={
-            cell.output.table
-              .rows
-          }
-          darkMode={
-            darkMode
-          }
-        />
-      </div>
-
-      {/* DASHBOARD PIN */}
-
-      <div
-        style={{
-          display:
-            'flex',
-          justifyContent:
-            'flex-end',
-          margin:
-            '6px 0 4px',
-        }}
-      >
-        <button
-          type="button"
-          onClick={() =>
-            toggleDashboardPin(
-              cell,
-            )
-          }
-          style={{
-            fontSize:
-              '10px',
-            fontWeight:
-              600,
-            padding:
-              '5px 9px',
-            borderRadius:
-              '4px',
-            border:
-              `1px solid ${colors.border}`,
-            background:
-              dashboardPins.some(
-                (pin) =>
-                  pin.cellId ===
-                  cell.id,
-              )
-                ? colors.blue
-                : colors.card,
-            color:
-              dashboardPins.some(
-                (pin) =>
-                  pin.cellId ===
-                  cell.id,
-              )
-                ? '#FFFFFF'
-                : colors.primaryText,
-            cursor:
-              'pointer',
-            fontFamily:
-              'inherit',
-          }}
-        >
-          {dashboardPins.some(
-            (pin) =>
-              pin.cellId ===
-              cell.id,
-          )
-            ? 'Pinned to dashboard'
-            : 'Pin to dashboard'}
-        </button>
-      </div>
-
-      {/* TABLE */}
+      <ExportActions
+        columns={
+          cell.output.table
+            .columns
+        }
+        rows={
+          cell.output.table
+            .rows
+        }
+        darkMode={
+          darkMode
+        }
+        filename={`hackersharbor-results-${cell.id}.csv`}
+      />
 
       <SmartTable
         columns={
@@ -5104,44 +3756,21 @@ export default function Dock() {
         }
         pageSize={25}
         chartFilter={
-          chartFilter?.cellId ===
-          cell.id
+          chartFilter?.cellId === cell.id
             ? {
-                column:
-                  chartFilter.column,
-                value:
-                  chartFilter.value,
+                column: chartFilter.column,
+                value: chartFilter.value,
               }
             : null
         }
         onClearChartFilter={() =>
-          setChartFilter(
-            (current) =>
-              current?.cellId ===
-              cell.id
-                ? null
-                : current,
+          setChartFilter((current) =>
+            current?.cellId === cell.id
+              ? null
+              : current,
           )
         }
       />
-
-      {/* COLUMN INTELLIGENCE */}
-
-      <ColumnIntelligence
-        columns={
-          cell.output.table
-            .columns
-        }
-        rows={
-          cell.output.table
-            .rows
-        }
-        darkMode={
-          darkMode
-        }
-      />
-
-      {/* INSIGHT */}
 
       <SmartInsight
         columns={
@@ -5157,22 +3786,6 @@ export default function Dock() {
         }
       />
 
-      <AdvancedAIInsights
-        columns={
-          cell.output.table
-            .columns
-        }
-        rows={
-          cell.output.table
-            .rows
-        }
-        darkMode={
-          darkMode
-        }
-      />
-
-      {/* CHART */}
-
       <SQLChart
         columns={
           cell.output.table
@@ -5185,55 +3798,10 @@ export default function Dock() {
         darkMode={
           darkMode
         }
-        chartState={
-          chartStates[cell.id] ??
-          null
-        }
-        onChartStateChange={(
-          state,
-        ) => {
-          setChartStates(
-            (current) => {
-              const previous =
-                current[cell.id]
-
-              if (
-                previous &&
-                previous.chartType ===
-                  state.chartType &&
-                previous.xColumn ===
-                  state.xColumn &&
-                previous.yColumn ===
-                  state.yColumn
-              ) {
-                return current
-              }
-
-              const next = {
-                ...current,
-                [cell.id]:
-                  state,
-              }
-
-              updateDashboardChartState(
-                cell.id,
-                state,
-              )
-
-              return next
-            },
-          )
-        }}
-        exportFilename={
-          `hackersharbor-chart-${cell.id}`
-        }
-        onPointClick={(
-          column,
-          value,
-        ) =>
+        exportFilename={`hackersharbor-chart-${cell.id}`}
+        onPointClick={(column, value) =>
           setChartFilter({
-            cellId:
-              cell.id,
+            cellId: cell.id,
             column,
             value,
           })
@@ -5320,10 +3888,6 @@ export default function Dock() {
               </div>
             ),
           )}
-
-          </div>
-
-          {/* FUSION NORMAL CONTENT END */}
 
           {/* EMPTY NOTEBOOK */}
 

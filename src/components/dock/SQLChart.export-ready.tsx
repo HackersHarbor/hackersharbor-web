@@ -26,18 +26,10 @@ const Plot = dynamic(
 /*                                  TYPES                                     */
 /* -------------------------------------------------------------------------- */
 
-export type ChartState = {
-  chartType: ChartType
-  xColumn: string
-  yColumn: string
-}
-
 type SQLChartProps = {
   columns: string[]
   rows: unknown[][]
   darkMode?: boolean
-  chartState?: ChartState | null
-  onChartStateChange?: (state: ChartState) => void
 
   /*
    * Called when the user clicks a bar,
@@ -47,6 +39,8 @@ type SQLChartProps = {
     column: string,
     value: unknown,
   ) => void
+
+  exportFilename?: string
 }
 
 type ChartType =
@@ -120,22 +114,67 @@ export function SQLChart({
   columns,
   rows,
   darkMode = false,
-  chartState,
-  onChartStateChange,
   onPointClick,
+  exportFilename = 'query-chart',
 }: SQLChartProps) {
+  const chartElementRef =
+    useRef<HTMLDivElement | null>(null)
+
+  const [chartReady, setChartReady] =
+    useState(false)
+
+  const downloadPNG = async () => {
+    const graph =
+      chartElementRef.current?.querySelector(
+        '.js-plotly-plot',
+      ) as HTMLElement | null
+
+    const plotly =
+      (
+        window as unknown as {
+          Plotly?: {
+            downloadImage?: (
+              graphDiv: HTMLElement,
+              options: {
+                format: 'png'
+                filename: string
+                width: number
+                height: number
+                scale: number
+              },
+            ) => Promise<unknown>
+          }
+        }
+      ).Plotly
+
+    if (
+      !graph ||
+      !plotly?.downloadImage
+    ) {
+      return
+    }
+
+    await plotly.downloadImage(
+      graph,
+      {
+        format: 'png',
+        filename: exportFilename,
+        width: 1400,
+        height: 800,
+        scale: 2,
+      },
+    )
+  }
   const [
     chartType,
     setChartType,
-  ] = useState<ChartType>(
-    chartState?.chartType ?? 'bar',
-  )
+  ] = useState<ChartType>('bar')
 
   const [
     xColumn,
     setXColumn,
   ] = useState(
-    chartState?.xColumn ?? columns[0] ?? '',
+    columns[0] ?? '',
   )
 
   const numericColumns =
@@ -155,7 +194,7 @@ export function SQLChart({
     yColumn,
     setYColumn,
   ] = useState(
-    chartState?.yColumn ?? numericColumns[0] ?? '',
+    numericColumns[0] ?? '',
   )
 
   const suggestion = useMemo(() => {
@@ -279,68 +318,8 @@ export function SQLChart({
       : numericColumns[0] ?? ''
 
   useEffect(() => {
-    if (!chartState) {
-      return
-    }
-
-    setChartType(chartState.chartType)
-    setXColumn(chartState.xColumn)
-    setYColumn(chartState.yColumn)
-  }, [chartState])
-
-  const updateChartState = (
-    next: Partial<ChartState>,
-  ) => {
-    const nextState: ChartState = {
-      chartType,
-      xColumn: safeXColumn,
-      yColumn: safeYColumn,
-      ...next,
-    }
-
-    if (next.chartType) {
-      setChartType(next.chartType)
-    }
-
-    if (next.xColumn !== undefined) {
-      setXColumn(next.xColumn)
-    }
-
-    if (next.yColumn !== undefined) {
-      setYColumn(next.yColumn)
-    }
-
-    onChartStateChangeRef.current?.(nextState)
-  }
-
-  /*
-   * Keep the latest callback without making the effect depend
-   * on the callback identity. Dashboard renders create a new
-   * inline callback, so depending on it would make this effect
-   * fire after every Dashboard render and can create a
-   * setState -> render -> effect loop.
-   */
-  const onChartStateChangeRef =
-    useRef(
-      onChartStateChange,
-    )
-
-  useEffect(() => {
-    onChartStateChangeRef.current =
-      onChartStateChange
-  }, [onChartStateChange])
-
-  useEffect(() => {
-    onChartStateChangeRef.current?.({
-      chartType,
-      xColumn: safeXColumn,
-      yColumn: safeYColumn,
-    })
-  }, [
-    chartType,
-    safeXColumn,
-    safeYColumn,
-  ])
+    setShowSuggestion(true)
+  }, [columns, rows])
 
   const xIndex =
     columns.indexOf(
@@ -644,17 +623,53 @@ export function SQLChart({
           </span>
         </div>
 
-        <span
+        <div
           style={{
-            fontSize: '9px',
-
-            color:
-              colors.secondary,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '7px',
           }}
         >
-          {chartRows.length.toLocaleString()}{' '}
-          points
-        </span>
+          <span
+            style={{
+              fontSize: '9px',
+              color:
+                colors.secondary,
+            }}
+          >
+            {chartRows.length.toLocaleString()}{' '}
+            points
+          </span>
+
+          <button
+            type="button"
+            onClick={downloadPNG}
+            disabled={!chartReady}
+            style={{
+              border:
+                `1px solid ${colors.border}`,
+              borderRadius: '5px',
+              background:
+                colors.background,
+              color:
+                colors.text,
+              cursor:
+                chartReady
+                  ? 'pointer'
+                  : 'not-allowed',
+              fontFamily:
+                'inherit',
+              fontSize: '9px',
+              fontWeight: 600,
+              padding:
+                '4px 7px',
+              opacity:
+                chartReady ? 1 : 0.55,
+            }}
+          >
+            Download PNG
+          </button>
+        </div>
       </div>
 
       {suggestion && showSuggestion && (
@@ -735,11 +750,9 @@ export function SQLChart({
           <button
             type="button"
             onClick={() => {
-              updateChartState({
-                chartType: suggestion.type,
-                xColumn: suggestion.x,
-                yColumn: suggestion.y,
-              })
+              setChartType(suggestion.type)
+              setXColumn(suggestion.x)
+              setYColumn(suggestion.y)
               setShowSuggestion(false)
             }}
             style={{
@@ -786,10 +799,10 @@ export function SQLChart({
         <select
           value={chartType}
           onChange={(event) =>
-            updateChartState({
-              chartType: event.target
+            setChartType(
+              event.target
                 .value as ChartType,
-            })
+            )
           }
           style={{
             padding:
@@ -836,9 +849,9 @@ export function SQLChart({
         <select
           value={safeXColumn}
           onChange={(event) =>
-            updateChartState({
-              xColumn: event.target.value,
-            })
+            setXColumn(
+              event.target.value,
+            )
           }
           style={{
             padding:
@@ -883,9 +896,9 @@ export function SQLChart({
         <select
           value={safeYColumn}
           onChange={(event) =>
-            updateChartState({
-              yColumn: event.target.value,
-            })
+            setYColumn(
+              event.target.value,
+            )
           }
           disabled={
             numericColumns.length ===
@@ -1006,6 +1019,14 @@ export function SQLChart({
           <Plot
             data={
               plotData as any
+            }
+
+            onInitialized={() =>
+              setChartReady(true)
+            }
+
+            onUpdate={() =>
+              setChartReady(true)
             }
 
             /*
