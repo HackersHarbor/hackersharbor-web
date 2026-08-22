@@ -2185,14 +2185,10 @@ export default function Dock() {
                   cell.id,
                 title:
                   `Analysis ${cell.id}`,
-                columns:
-                  cell.output
-                    .table
-                    .columns,
+                  columns:
+                  cell.output?.table?.columns ?? [],
                 rows:
-                  cell.output
-                    .table
-                    .rows,
+                  cell.output?.table?.rows ?? [],
                 chartState:
                   chartStates[
                     cell.id

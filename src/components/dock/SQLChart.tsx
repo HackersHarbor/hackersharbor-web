@@ -38,16 +38,10 @@ type SQLChartProps = {
   darkMode?: boolean
   chartState?: ChartState | null
   onChartStateChange?: (state: ChartState) => void
-
-  /*
-   * Called when the user clicks a bar,
-   * line point, scatter point, or pie slice.
-   */
-  onPointClick?: (
-    column: string,
-    value: unknown,
-  ) => void
+  exportFilename?: string
+  onPointClick?: (column: string, value: unknown) => void
 }
+
 
 type ChartType =
   | 'bar'
