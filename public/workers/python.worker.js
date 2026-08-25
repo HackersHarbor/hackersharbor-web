@@ -13,57 +13,58 @@ async function initializePyodide() {
     return initializationPromise
   }
 
-  initializationPromise =
-    (async () => {
-      try {
-        /*
-         * Pyodide is loaded from its official CDN.
-         *
-         * The worker keeps Python execution away
-         * from the main browser thread.
-         */
-
-        if (
-          typeof loadPyodide ===
-          'undefined'
-        ) {
-          importScripts(
-            'https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js',
-          )
-        }
-
-        pyodide =
-          await loadPyodide({
-            indexURL:
-              'https://cdn.jsdelivr.net/pyodide/v0.26.2/full/',
-          })
-
-        /*
-         * Pandas and NumPy are required by
-         * The Dock's browser Python MVP.
-         */
-
-        await pyodide.loadPackage([
-          'numpy',
-          'pandas',
-        ])
-
-        initialized = true
-
-        return pyodide
-      } catch (error) {
-        initializationPromise =
-          null
-
-        throw error
+  initializationPromise = (async () => {
+    try {
+      /*
+       * Load Pyodide inside the Web Worker.
+       * This keeps Python execution off the main browser thread.
+       */
+      if (typeof loadPyodide === 'undefined') {
+        importScripts(
+          'https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js'
+        )
       }
-    })()
+
+      pyodide = await loadPyodide({
+        indexURL:
+          'https://cdn.jsdelivr.net/pyodide/v0.26.2/full/',
+      })
+
+      /*
+       * Do not preload numpy/pandas here.
+       * Packages are loaded automatically when the user's
+       * Python code imports them.
+       */
+
+      initialized = true
+
+      return pyodide
+    } catch (error) {
+      initializationPromise = null
+      pyodide = null
+      initialized = false
+
+      throw error
+    }
+  })()
 
   return initializationPromise
 }
 
 /* -------------------------------------------------------------------------- */
-/*                              SEND RESULT                                   */
+/* PACKAGE LOADING                                                            */
+/* -------------------------------------------------------------------------- */
+
+async function loadPackagesForCode(runtime, code) {
+  if (!code || !code.trim()) {
+    return
+  }
+
+  await runtime.loadPackagesFromImports(code)
+}
+
+/* -------------------------------------------------------------------------- */
+/* SEND RESULT                                                                */
 /* -------------------------------------------------------------------------- */
 
 function send(id, result) {
@@ -75,79 +76,108 @@ function send(id, result) {
 }
 
 /* -------------------------------------------------------------------------- */
-/*                              EXECUTE PYTHON                                */
+/* EXECUTE PYTHON                                                             */
 /* -------------------------------------------------------------------------- */
 
-async function executePython(
-  id,
-  code,
-) {
-  const started =
-    performance.now()
+async function executePython(id, code) {
+  const started = performance.now()
 
   try {
-    const runtime =
-      await initializePyodide()
+    const runtime = await initializePyodide()
 
     /*
-     * Capture stdout/stderr from Python.
+     * Load any packages imported by the learner.
      */
+    await loadPackagesForCode(runtime, code)
 
-    const output = []
+    /*
+     * Capture stdout and stderr.
+     */
+    let stdout = ''
+    let stderr = ''
 
     runtime.setStdout({
       batched: (text) => {
-        output.push(text)
+        stdout += text
       },
     })
 
     runtime.setStderr({
       batched: (text) => {
-        output.push(text)
+        stderr += text
       },
     })
 
     /*
-     * Make the user's code available
-     * exactly as written.
+     * Execute the learner's code exactly as written.
      */
+    const result = await runtime.runPythonAsync(code)
 
-    await runtime.runPythonAsync(
-      code,
-    )
+    /*
+     * Capture the returned Python value too.
+     */
+    let returnedValue = null
 
+    if (result !== undefined && result !== null) {
+      try {
+        if (
+          typeof result === 'object' &&
+          typeof result.toJs === 'function'
+        ) {
+          returnedValue = result.toJs({
+            dict_converter: Object.fromEntries,
+          })
+
+          result.destroy()
+        } else {
+          returnedValue = result
+        }
+      } catch {
+        returnedValue = null
+
+        try {
+          if (
+            result &&
+            typeof result.destroy === 'function'
+          ) {
+            result.destroy()
+          }
+        } catch {
+          // Ignore cleanup failures.
+        }
+      }
+    }
+
+    /*
+     * Return the REAL Python output.
+     */
     send(id, {
       success: true,
-
       type: 'text',
-
-      text: output.join(''),
-
+      text: stdout,
+      stdout,
+      stderr,
+      value: returnedValue,
       executionTime:
-        performance.now() -
-        started,
+        performance.now() - started,
     })
   } catch (error) {
     send(id, {
       success: false,
-
       type: 'error',
-
       error:
         error &&
         error.message
           ? error.message
           : String(error),
-
       executionTime:
-        performance.now() -
-        started,
+        performance.now() - started,
     })
   }
 }
 
 /* -------------------------------------------------------------------------- */
-/*                                LOAD CSV                                    */
+/* LOAD CSV                                                                   */
 /* -------------------------------------------------------------------------- */
 
 async function loadCSV(
@@ -155,25 +185,10 @@ async function loadCSV(
   filename,
   content,
 ) {
-  const started =
-    performance.now()
+  const started = performance.now()
 
   try {
-    const runtime =
-      await initializePyodide()
-
-    /*
-     * IMPORTANT:
-     *
-     * Persist the uploaded CSV inside
-     * the Pyodide filesystem.
-     *
-     * This allows:
-     *
-     * pd.read_csv("sales.csv")
-     *
-     * from later notebook cells.
-     */
+    const runtime = await initializePyodide()
 
     runtime.FS.writeFile(
       filename,
@@ -185,7 +200,7 @@ async function loadCSV(
       filename,
     )
 
-    await runtime.runPythonAsync(`
+    const loadCode = `
 import pandas as pd
 
 __filename__ = __csv_filename__
@@ -201,72 +216,52 @@ print()
 print(
     df.head(10).to_string(index=False)
 )
-`)
+`
+
+    await runtime.runPythonAsync(loadCode)
 
     send(id, {
       success: true,
-
       type: 'text',
-
       text:
         `CSV "${filename}" loaded into the Python filesystem.`,
-
       executionTime:
-        performance.now() -
-        started,
+        performance.now() - started,
     })
   } catch (error) {
     send(id, {
       success: false,
-
       type: 'error',
-
       error:
         error &&
         error.message
           ? error.message
           : String(error),
-
       executionTime:
-        performance.now() -
-        started,
+        performance.now() - started,
     })
   }
 }
 
 /* -------------------------------------------------------------------------- */
-/*                              RESET PYTHON                                  */
+/* RESET PYTHON                                                               */
 /* -------------------------------------------------------------------------- */
 
 async function resetPython(id) {
   try {
-    /*
-     * Terminating the worker is handled
-     * by the React hook.
-     *
-     * This message exists so the protocol
-     * remains explicit.
-     */
-
     initialized = false
-
     pyodide = null
-
     initializationPromise = null
 
     send(id, {
       success: true,
-
       type: 'text',
-
       text: 'Python kernel reset.',
     })
   } catch (error) {
     send(id, {
       success: false,
-
       type: 'error',
-
       error:
         error &&
         error.message
@@ -277,14 +272,11 @@ async function resetPython(id) {
 }
 
 /* -------------------------------------------------------------------------- */
-/*                              MESSAGE HANDLER                               */
+/* MESSAGE HANDLER                                                            */
 /* -------------------------------------------------------------------------- */
 
-self.onmessage = async (
-  event,
-) => {
-  const message =
-    event.data
+self.onmessage = async (event) => {
+  const message = event.data
 
   if (!message) {
     return
@@ -326,18 +318,14 @@ self.onmessage = async (
 
     send(id, {
       success: false,
-
       type: 'error',
-
       error:
         `Unknown worker message type: ${type}`,
     })
   } catch (error) {
     send(id, {
       success: false,
-
       type: 'error',
-
       error:
         error &&
         error.message

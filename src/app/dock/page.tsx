@@ -407,6 +407,11 @@ export default function Dock() {
   ] = useState<string[]>([])
 
   const [
+    activeSQLTable,
+    setActiveSQLTable,
+  ] = useState<string | null>(null)
+
+  const [
     draggedCellId,
     setDraggedCellId,
   ] = useState<number | null>(
@@ -900,6 +905,16 @@ export default function Dock() {
       [],
     )
 
+  const executePythonCode =
+    useCallback(
+      async (
+        code: string,
+      ): Promise<ExecutionResult> => {
+        return executePython(code)
+      },
+      [executePython],
+    )
+
   /* ------------------------------------------------------------------------ */
   /*                              RUN PYTHON                                 */
   /* ------------------------------------------------------------------------ */
@@ -944,10 +959,12 @@ export default function Dock() {
             executionMode ===
             'browser'
           ) {
+            
             result =
               await executePython(
                 cell.code,
               )
+
           } else {
             const started =
               performance.now()
@@ -1061,7 +1078,10 @@ export default function Dock() {
             )
           } else {
             setStatus(
-              'Python execution failed.',
+              `Python execution failed: ${
+                result.error ||
+                'Unknown Python error.'
+              }`,
             )
           }
         } catch (error) {
@@ -1218,7 +1238,10 @@ export default function Dock() {
             )
           } else {
             setStatus(
-              'SQL query failed.',
+              `SQL query failed: ${
+                result.error ||
+                'Unknown SQL error.'
+              }`,
             )
           }
         } catch (error) {
@@ -1433,11 +1456,11 @@ export default function Dock() {
               cell.id,
           )
 
-        for (
-          const id of cellIds
-        ) {
-          await runCell(id)
-        }
+        await Promise.all(
+          cellIds.map(
+            (id) => runCell(id),
+          ),
+        )
 
         setStatus(
           'All notebook cells finished.',
@@ -1919,6 +1942,33 @@ export default function Dock() {
                 file.name,
                 content,
               )
+
+            setActiveSQLTable(
+              duckResult.tableName,
+            )
+
+            setCells(
+              (previous) =>
+                previous.map(
+                  (cell) =>
+                    cell.id === 3 &&
+                    cell.type === 'sql' &&
+                    (
+                      cell.code.includes(
+                        'FROM data',
+                      ) ||
+                      cell.code.includes(
+                        'Upload a CSV first',
+                      )
+                    )
+                      ? {
+                          ...cell,
+                          code:
+                            `SELECT *\nFROM ${duckResult.tableName}\nLIMIT 10;`,
+                        }
+                      : cell,
+                ),
+            )
 
             setUploadedFiles(
               (previous) =>
@@ -2927,7 +2977,7 @@ export default function Dock() {
                   '4px',
               }}
             >
-              📓 The Dock
+              ?? The Dock
             </div>
 
             <div
@@ -3189,7 +3239,7 @@ export default function Dock() {
                   'inherit',
               }}
             >
-              📁 Upload CSV
+              Upload CSV
             </button>
 
             <input
@@ -3245,7 +3295,7 @@ export default function Dock() {
                         file
                       }
                     >
-                      📄{' '}
+                      ??{' '}
                       {
                         file
                       }
@@ -3285,7 +3335,7 @@ export default function Dock() {
       fontFamily: 'inherit',
     }}
   >
-    ◉ Inspect SQL tables
+    Inspect SQL tables
   </button>
 )}
 
@@ -3330,7 +3380,7 @@ export default function Dock() {
                   'inherit',
               }}
             >
-              ◉ Inspect SQL tables
+              Inspect SQL tables
             </button>
           </div>
         </aside>
@@ -3660,15 +3710,13 @@ export default function Dock() {
               <button
                 type="button"
                 title="Open Harbor Fusion"
-                onClick={() =>
+                onClick={() => {
                   setFusionMode(true)
-                }
+                }}
                 style={{
                   fontSize: '11px',
-                  fontWeight: 700,
-                  color: fusionMode
-                    ? '#FFFFFF'
-                    : colors.blue,
+                  fontWeight: 750,
+                  color: fusionMode ? '#FFFFFF' : colors.blue,
                   background: fusionMode
                     ? colors.blue
                     : darkMode
@@ -4144,27 +4192,11 @@ export default function Dock() {
                   'inherit',
               }}
             >
-              ▶ Run all
+              Run all
             </button>
           </div>
 
-          {/* ============================================================ */}
-          {/* ANALYSIS HISTORY                                             */}
-          {/* ============================================================ */}
-
-          <AnalysisHistory
-            cells={cells}
-            darkMode={darkMode}
-            chartStates={chartStates}
-            onOpenAnalysis={
-              openSavedAnalysis
-            }
-            onDuplicateAnalysis={
-              duplicateSavedAnalysis
-            }
-          />
-
-          {fusionMode && (
+          {fusionMode ? (
             <FusionWorkspace
               cells={cells}
               darkMode={darkMode}
@@ -4173,9 +4205,12 @@ export default function Dock() {
               dashboardPins={dashboardPins}
               onUpdateCode={updateCode}
               onRunCell={runCell}
+              onRunAll={runAll}
+              onRunPythonCode={executePythonCode}
               onChartStateChange={(cellId, state) => {
                 setChartStates((current) => {
                   const previous = current[cellId]
+
                   if (
                     previous?.chartType === state.chartType &&
                     previous?.xColumn === state.xColumn &&
@@ -4183,24 +4218,37 @@ export default function Dock() {
                   ) {
                     return current
                   }
-                  return { ...current, [cellId]: state }
+
+                  return {
+                    ...current,
+                    [cellId]: state,
+                  }
                 })
+
                 updateDashboardChartState(cellId, state)
               }}
               onPointClick={(cellId, column, value) =>
-                setChartFilter({ cellId, column, value })
+                setChartFilter({
+                  cellId,
+                  column,
+                  value,
+                })
               }
               onRemoveDashboardPin={removeDashboardPin}
               onClearDashboard={clearDashboard}
               onDashboardChartStateChange={updateDashboardChartState}
               onOpenAnalysis={openSavedAnalysis}
               onDuplicateAnalysis={duplicateSavedAnalysis}
+              onExit={() => setFusionMode(false)}
             />
-          )}
+          ) : null}
 
           <div
             style={{
-              display: fusionMode ? 'none' : 'block',
+              display:
+                fusionMode
+                  ? 'none'
+                  : 'block',
             }}
           >
 
@@ -4347,7 +4395,7 @@ export default function Dock() {
                           'none',
                       }}
                     >
-                      ⋮⋮
+                      ??
                     </span>
 
                     <span
@@ -4474,7 +4522,7 @@ export default function Dock() {
                     >
                       {cell.running
                         ? 'Running...'
-                        : '▶ Run'}
+                        : 'Run'}
                     </button>
 
                     <button
@@ -5414,8 +5462,13 @@ export default function Dock() {
               </button>
             </div>
           )}
+
         </main>
       </div>
     </div>
   )
 }
+
+
+
+

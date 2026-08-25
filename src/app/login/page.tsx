@@ -1,11 +1,13 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 
 export default function Login() {
+  const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -24,7 +26,7 @@ export default function Login() {
     if (error) {
       setMessage(error.message)
     } else {
-      window.location.href = '/'
+      router.replace('/dashboard')
     }
 
     setLoading(false)

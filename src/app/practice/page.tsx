@@ -3362,7 +3362,7 @@ export default function Practice() {
   const [showBackToTop, setShowBackToTop] = useState(false)
   const [panelFocus, setPanelFocus] = useState<'none' | 'curriculum' | 'console'>('none')
   const [curriculumWidth, setCurriculumWidth] = useState(255)
-  const [consoleWidth, setConsoleWidth] = useState(560)
+  const [consoleWidth, setConsoleWidth] = useState(430)
   const [draggingPanel, setDraggingPanel] = useState<'curriculum' | 'console' | null>(null)
 
   const curriculumPanelWidth = curriculumNarrow ? 190 : curriculumWidth
@@ -3392,7 +3392,12 @@ export default function Practice() {
     startConsoleWidth: number
   } | null>(null)
   const [activeTab, setActiveTab] = useState('Learn')
-  const [output, setOutput] = useState('')
+  const [output, setOutput] = useState(
+    [
+      'YOUR OUTPUT',
+      'Press Shift + Enter to run your code.',
+    ].join('\n')
+  )
   const [running, setRunning] = useState(false)
   const [solvedIds, setSolvedIds] = useState<number[]>([])
   const [clearedLessons, setClearedLessons] = useState<number[]>([])
@@ -3855,9 +3860,6 @@ export default function Practice() {
             'HARBOR CONSOLE',
             '────────────────────────',
             '',
-            'EXPECTED OUTPUT',
-            selectedProblem.expectedOutput,
-            '',
             'YOUR OUTPUT',
             actualOutput || 'Python execution failed.',
             '',
@@ -3872,9 +3874,6 @@ export default function Practice() {
         [
           'HARBOR CONSOLE',
           '────────────────────────',
-          '',
-          'EXPECTED OUTPUT',
-          selectedProblem.expectedOutput,
           '',
           'YOUR OUTPUT',
           actualOutput || '(no output)',
@@ -3891,9 +3890,6 @@ export default function Practice() {
         [
           'HARBOR CONSOLE',
           '────────────────────────',
-          '',
-          'EXPECTED OUTPUT',
-          selectedProblem.expectedOutput,
           '',
           'YOUR OUTPUT',
           message,
@@ -3932,9 +3928,6 @@ export default function Practice() {
     setCode(problem.starterCode)
     setOutput(
       [
-        'EXPECTED OUTPUT',
-        problem.expectedOutput,
-        '',
         'YOUR OUTPUT',
         'Press Shift + Enter to run your code.',
       ].join('\n')
@@ -4314,7 +4307,7 @@ export default function Practice() {
                 fontWeight: 900,
                 letterSpacing: 1.5,
                 color: sea,
-                marginBottom: 6,
+                marginBottom: 5,
               }}
             >
               PYTHON
@@ -4325,7 +4318,7 @@ export default function Practice() {
                 display: 'flex',
                 justifyContent: 'flex-end',
                 gap: 5,
-                marginBottom: 8,
+                marginBottom: 6,
               }}
             >
               <button
@@ -4593,9 +4586,6 @@ export default function Practice() {
                               setCode(generated.starterCode)
                               setOutput(
                                 [
-                                  'EXPECTED OUTPUT',
-                                  generated.expectedOutput,
-                                  '',
                                   'YOUR OUTPUT',
                                   'Press Shift + Enter to run your lesson experiment.',
                                 ].join('\n'),
@@ -5876,14 +5866,14 @@ print("42")`}
           style={{
             gridColumn: 3,
             position: 'relative',
-            top: 'auto',
             alignSelf: 'stretch',
+            justifySelf: 'stretch',
             width: '100%',
             minWidth: 0,
-            maxWidth: '100%',
+            maxWidth: 'none',
             height: '100%',
             minHeight: 0,
-            maxHeight: '100%',
+            maxHeight: 'none',
             boxSizing: 'border-box',
             zIndex: 30,
             zoom: consoleFontScale,
@@ -5894,12 +5884,14 @@ print("42")`}
             background: editor,
             color: '#DCECE6',
             borderLeft: `1px solid ${darkMode ? '#1B3036' : '#203B32'}`,
-            borderTop: `1px solid ${darkMode ? '#1B3036' : '#203B32'}`,
-            borderRadius: '12px 0 0 0',
+            borderTop: 'none',
+            borderRight: 'none',
+            borderBottom: 'none',
+            borderRadius: 0,
             transform: consoleOpen ? 'translate3d(0, 0, 0)' : 'translate3d(105%, 0, 0)',
-            transition: 'transform .38s cubic-bezier(.22,.8,.24,1)',
+            transition: 'transform .38s cubic-bezier(.22,.8,.24,1), box-shadow .2s ease',
             willChange: 'transform',
-            boxShadow: consoleOpen ? '-18px 0 45px rgba(0,0,0,.22)' : 'none',
+            boxShadow: consoleOpen ? '-10px 0 28px rgba(0,0,0,.14)' : 'none',
             overflow: 'hidden',
             pointerEvents: consoleOpen ? 'auto' : 'none',
           }}
@@ -5909,7 +5901,7 @@ print("42")`}
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              padding: '12px 14px',
+              padding: '11px 12px',
               borderBottom: '1px solid #203A35',
               background: '#0C211C',
             }}
@@ -5925,7 +5917,7 @@ print("42")`}
               >
                 HARBOR CONSOLE
               </div>
-              <div style={{ fontSize: 13.2, fontWeight: 700, marginTop: 3 }}>
+              <div style={{ fontSize: 11.8, fontWeight: 700, marginTop: 3 }}>
                 Python playground
               </div>
             </div>
@@ -6021,7 +6013,7 @@ print("42")`}
               display: 'flex',
               alignItems: 'center',
               gap: 9,
-              padding: '8px 14px',
+              padding: '7px 12px',
               borderBottom: '1px solid #1C3430',
               color: '#7FA69B',
               fontSize: 10.8,
@@ -6048,10 +6040,10 @@ print("42")`}
               border: 'none',
               background: '#071411',
               color: '#D6E9E2',
-              padding: '18px',
+              padding: '14px 15px',
               fontFamily: "'SFMono-Regular', Consolas, monospace",
-              fontSize: 15.6,
-              lineHeight: 1.75,
+              fontSize: 14,
+              lineHeight: 1.65,
             }}
           />
 
@@ -6059,8 +6051,8 @@ print("42")`}
             style={{
               borderTop: '1px solid #203A35',
               background: '#091A16',
-              minHeight: 175,
-              padding: '12px 14px',
+              minHeight: 138,
+              padding: '10px 12px',
               boxSizing: 'border-box',
             }}
           >
@@ -6119,8 +6111,8 @@ print("42")`}
                 color: '#B9D6CC',
                 whiteSpace: 'pre-wrap',
                 fontFamily: "'SFMono-Regular', Consolas, monospace",
-                fontSize: 12,
-                lineHeight: 1.6,
+                fontSize: 11.5,
+                lineHeight: 1.55,
               }}
             >
               {output || 'Press Shift + Enter to run your code.'}

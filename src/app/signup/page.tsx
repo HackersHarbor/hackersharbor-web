@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import Image from 'next/image'
+import Link from 'next/link'
 
 export default function SignUp() {
   const [name, setName] = useState('')
@@ -63,7 +64,7 @@ export default function SignUp() {
         }}
       >
         {/* BRAND */}
-        <a
+        <Link
           href="/"
           style={{
             display: 'flex',
@@ -92,7 +93,7 @@ export default function SignUp() {
             Hackers
             <span style={{ color: '#1549C2' }}>Harbor</span>
           </span>
-        </a>
+        </Link>
 
         {/* LOGIN */}
         <p
@@ -103,7 +104,7 @@ export default function SignUp() {
           }}
         >
           Already have an account?{' '}
-          <a
+          <Link
             href="/login"
             style={{
               color: '#1549C2',
@@ -112,7 +113,7 @@ export default function SignUp() {
             }}
           >
             Log in
-          </a>
+          </Link>
         </p>
       </nav>
 
