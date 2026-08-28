@@ -23,6 +23,7 @@ type Post = {
   author: string
   authorId: string
   initials: string
+  avatarUrl?: string | null
   time: string
   title: string
   body: string
@@ -33,6 +34,30 @@ type Post = {
   pinned?: boolean
   rescue?: boolean
   postType: 'QUESTION' | 'DISCUSSION' | 'SHIP_LOG' | 'WRECK'
+}
+
+type CommunityProfile = {
+  userId: string
+  avatarUrl: string | null
+  coverUrl: string | null
+  tagline: string
+  story: string
+  occupation: string
+  collegeActivity: string
+}
+
+type CommunityMessage = {
+  id: string
+  conversationId: string
+  senderId: string
+  content: string
+  createdAt: string
+}
+
+type CommunityStory = {
+  id: string
+  content: string
+  createdAt: string
 }
 
 type CommunityAnswer = {
@@ -167,6 +192,15 @@ export default function Community() {
   const [showAllTopics, setShowAllTopics] = useState(false)
   const [followedTopics, setFollowedTopics] = useState<string[]>([])
   const [search, setSearch] = useState('')
+  const [searchAuthor, setSearchAuthor] = useState('')
+  const [searchTag, setSearchTag] = useState('')
+  const [searchType, setSearchType] = useState<'all' | 'question' | 'discussion' | 'ship_log' | 'wreck'>('all')
+  const [searchSort, setSearchSort] = useState<'relevance' | 'newest' | 'active' | 'answered'>('relevance')
+  const [showAdvancedSearch, setShowAdvancedSearch] = useState(false)
+  const POSTS_PER_PAGE = 8
+  const [currentPage, setCurrentPage] = useState(1)
+  const [expandedQuestionPosts, setExpandedQuestionPosts] = useState<Set<string>>(new Set())
+
   const [askOpen, setAskOpen] = useState(false)
   const [bookmarked, setBookmarked] = useState<string[]>([])
   const [followedPosts, setFollowedPosts] = useState<string[]>([])
@@ -182,7 +216,36 @@ export default function Community() {
   const [errorMessage, setErrorMessage] = useState('')
   const [questionTitle, setQuestionTitle] = useState('')
   const [questionTopic, setQuestionTopic] = useState('')
+  const [questionTags, setQuestionTags] = useState<string[]>([])
+  const [questionTagDraft, setQuestionTagDraft] = useState('')
   const [topicPickerOpen, setTopicPickerOpen] = useState(false)
+  const addQuestionTag = () => {
+    const tag = questionTagDraft.trim().replace(/^#/, '').replace(/\s+/g, ' ')
+    if (!tag || questionTags.some(existing => existing.toLowerCase() === tag.toLowerCase()) || questionTags.length >= 5) {
+      setQuestionTagDraft('')
+      return
+    }
+    setQuestionTags(current => [...current, tag])
+    setQuestionTagDraft('')
+  }
+  useEffect(() => {
+    if (!askOpen) {
+      setQuestionTags([])
+      setQuestionTagDraft('')
+    }
+  }, [askOpen])
+  useEffect(() => {
+    const handleTagClick = (event: MouseEvent) => {
+      const target = event.target as HTMLElement | null
+      const tagElement = target?.closest('.tag') as HTMLElement | null
+      const tag = tagElement?.textContent?.trim()
+      if (!tag) return
+      setSearchTag(tag.replace(/^#/, ''))
+      setCurrentPage(1)
+    }
+    document.addEventListener('click', handleTagClick)
+    return () => document.removeEventListener('click', handleTagClick)
+  }, [])
   const openAskModal = () => {
     setQuestionTopic(topics.some(topic => topic.name === harbourArea) ? harbourArea : '')
     setTopicPickerOpen(false)
@@ -190,10 +253,53 @@ export default function Community() {
   }
   const [questionBody, setQuestionBody] = useState('')
   const [currentUserId, setCurrentUserId] = useState('')
+  const [profileUserId, setProfileUserId] = useState<string | null>(null)
+  const [profileUserName, setProfileUserName] = useState('')
+  const [profileLoading, setProfileLoading] = useState(false)
+  const [profilePosts, setProfilePosts] = useState<Post[]>([])
+  const [profileAnswerCount, setProfileAnswerCount] = useState(0)
+  const [profileTab, setProfileTab] = useState<'overview' | 'posts' | 'questions' | 'answers' | 'activity'>('overview')
+  const [profileData, setProfileData] = useState<CommunityProfile | null>(null)
+  const [profileStories, setProfileStories] = useState<CommunityStory[]>([])
+  const [profileEditing, setProfileEditing] = useState(false)
+  const [profileSaving, setProfileSaving] = useState(false)
+  const [profileUploading, setProfileUploading] = useState(false)
+  const [profileTaglineDraft, setProfileTaglineDraft] = useState('')
+  const [profileStoryDraft, setProfileStoryDraft] = useState('')
+  const [profileOccupationDraft, setProfileOccupationDraft] = useState('')
+  const [profileCollegeDraft, setProfileCollegeDraft] = useState('')
+  const [profileStoryComposerOpen, setProfileStoryComposerOpen] = useState(false)
+  const [profileStorySaving, setProfileStorySaving] = useState(false)
+  const [profileChatOpen, setProfileChatOpen] = useState(false)
+  const [profileChatLoading, setProfileChatLoading] = useState(false)
+  const [profileChatSending, setProfileChatSending] = useState(false)
+  const [profileChatConversationId, setProfileChatConversationId] = useState<string | null>(null)
+  const [profileChatMessages, setProfileChatMessages] = useState<CommunityMessage[]>([])
+  const [profileChatDraft, setProfileChatDraft] = useState('')
+
   const [openPostMenu, setOpenPostMenu] = useState<string | null>(null)
+  const [sharePost, setSharePost] = useState<Post | null>(null)
+  const [shareCopied, setShareCopied] = useState(false)
   const [deletingPostId, setDeletingPostId] = useState<string | null>(null)
   const [rescueUpdatingPostId, setRescueUpdatingPostId] = useState<string | null>(null)
+  const [pinUpdatingPostId, setPinUpdatingPostId] = useState<string | null>(null)
   const [editingPostId, setEditingPostId] = useState<string | null>(null)
+  const [editingAnswerId, setEditingAnswerId] = useState<string | null>(null)
+  const [editingAnswerContent, setEditingAnswerContent] = useState('')
+  const [savingAnswerId, setSavingAnswerId] = useState<string | null>(null)
+  const [deletingAnswerId, setDeletingAnswerId] = useState<string | null>(null)
+  const [reportTarget, setReportTarget] = useState<{
+    type: 'question' | 'answer'
+    id: string
+    postId: string
+    title: string
+  } | null>(null)
+  const [reportReason, setReportReason] = useState('')
+  const [reportDetails, setReportDetails] = useState('')
+  const [reportedContentIds, setReportedContentIds] = useState<Set<string>>(() => new Set())
+  const [reporting, setReporting] = useState(false)
+
+
   const [editingTitle, setEditingTitle] = useState('')
   const [editingBody, setEditingBody] = useState('')
   const [savingPostId, setSavingPostId] = useState<string | null>(null)
@@ -205,6 +311,16 @@ export default function Community() {
   const [votingAnswerId, setVotingAnswerId] = useState<string | null>(null)
   const [notifications, setNotifications] = useState<CommunityNotification[]>([])
   const [notificationsOpen, setNotificationsOpen] = useState(false)
+  const [notificationsLoading, setNotificationsLoading] = useState(false)
+  const [notificationPreferencesOpen, setNotificationPreferencesOpen] = useState(false)
+  const [notificationPreferences, setNotificationPreferences] = useState({
+    enabled: true,
+    mentions: true,
+    comments: true,
+    acceptedAnswers: true,
+  })
+  const [notificationPreferencesSaving, setNotificationPreferencesSaving] = useState(false)
+
 
   const [openReplies, setOpenReplies] = useState<string | null>(null)
   const [answers, setAnswers] = useState<Record<string, CommunityAnswer[]>>({})
@@ -215,11 +331,352 @@ export default function Community() {
   const [reputationProfiles, setReputationProfiles] = useState<Record<string, string>>({})
 
 
+
+  const loadCommunityProfileData = async (userId: string, fallbackName: string) => {
+    const [profileResult, answerResult, storyResult] = await Promise.all([
+      supabase
+        .from('community_profiles')
+        .select('user_id, avatar_url, cover_url, tagline, story, occupation, college_activity')
+        .eq('user_id', userId)
+        .maybeSingle(),
+      supabase
+        .from('community_answers')
+        .select('id', { count: 'exact', head: true })
+        .eq('author_id', userId),
+      supabase
+        .from('community_profile_stories')
+        .select('id, content, created_at')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(10),
+    ])
+
+    if (profileResult.error && profileResult.error.code !== 'PGRST116') {
+      throw profileResult.error
+    }
+    if (answerResult.error) throw answerResult.error
+    if (storyResult.error) throw storyResult.error
+
+    const row = profileResult.data
+    const profile: CommunityProfile = {
+      userId,
+      avatarUrl: row?.avatar_url ?? null,
+      coverUrl: row?.cover_url ?? null,
+      tagline: row?.tagline ?? '',
+      story: row?.story ?? '',
+      occupation: row?.occupation ?? '',
+      collegeActivity: row?.college_activity ?? '',
+    }
+
+    const stories: CommunityStory[] = (storyResult.data ?? []).map(story => ({
+      id: story.id,
+      content: story.content,
+      createdAt: story.created_at,
+    }))
+
+    setProfileData(profile)
+    setProfileStories(stories)
+    setProfileAnswerCount(answerResult.count ?? 0)
+    setProfileTaglineDraft(profile.tagline)
+    setProfileStoryDraft(profile.story)
+    setProfileOccupationDraft(profile.occupation)
+    setProfileCollegeDraft(profile.collegeActivity)
+  }
+
+  const openCommunityProfile = async (userId: string, fallbackName: string) => {
+    if (!userId) return
+
+    setProfileUserId(userId)
+    setProfileUserName(fallbackName || 'Harbour Member')
+    setProfilePosts(posts.filter(post => post.authorId === userId))
+    setProfileAnswerCount(0)
+    setProfileData(null)
+    setProfileStories([])
+    setProfileTab('overview')
+    setProfileEditing(false)
+    setProfileStoryComposerOpen(false)
+    setProfileLoading(true)
+
+    try {
+      const [profileNameResult] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select('display_name, username')
+          .eq('id', userId)
+          .maybeSingle(),
+      ])
+
+      const name =
+        profileNameResult.data?.display_name?.trim() ||
+        profileNameResult.data?.username?.trim() ||
+        fallbackName ||
+        'Harbour Member'
+
+      setProfileUserName(name)
+      await loadCommunityProfileData(userId, name)
+    } catch (error) {
+      console.error('Could not load Community profile:', error)
+      // A missing community_profiles row is treated as a blank profile.
+      setProfileData({
+        userId,
+        avatarUrl: null,
+        coverUrl: null,
+        tagline: '',
+        story: '',
+        occupation: '',
+        collegeActivity: '',
+      })
+      setProfileStories([])
+      setProfileTaglineDraft('')
+      setProfileStoryDraft('')
+      setProfileOccupationDraft('')
+      setProfileCollegeDraft('')
+    } finally {
+      setProfileLoading(false)
+    }
+  }
+
+  const saveCommunityProfile = async () => {
+    if (!profileUserId || profileUserId !== currentUserId) return
+
+    setProfileSaving(true)
+    setErrorMessage('')
+
+    const payload = {
+      user_id: profileUserId,
+      tagline: profileTaglineDraft.trim(),
+      story: profileStoryDraft.trim(),
+      occupation: profileOccupationDraft.trim(),
+      college_activity: profileCollegeDraft.trim(),
+      updated_at: new Date().toISOString(),
+    }
+
+    const { data, error } = await supabase
+      .from('community_profiles')
+      .upsert(payload, { onConflict: 'user_id' })
+      .select('user_id, avatar_url, cover_url, tagline, story, occupation, college_activity')
+      .single()
+
+    if (error) {
+      console.error('Community profile save error:', error)
+      setErrorMessage(`We could not save your profile: ${error.message}`)
+      setProfileSaving(false)
+      return
+    }
+
+    setProfileData({
+      userId: data.user_id,
+      avatarUrl: data.avatar_url ?? null,
+      coverUrl: data.cover_url ?? null,
+      tagline: data.tagline ?? '',
+      story: data.story ?? '',
+      occupation: data.occupation ?? '',
+      collegeActivity: data.college_activity ?? '',
+    })
+    setProfileEditing(false)
+    setProfileSaving(false)
+  }
+
+  const uploadCommunityProfilePhoto = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file || !profileUserId || profileUserId !== currentUserId) return
+
+    if (!file.type.startsWith('image/')) {
+      setErrorMessage('Please choose an image file.')
+      return
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setErrorMessage('Profile photos must be 5 MB or smaller.')
+      return
+    }
+
+    setProfileUploading(true)
+    setErrorMessage('')
+
+    try {
+      const extension = file.name.split('.').pop()?.toLowerCase() || 'jpg'
+      const path = `${profileUserId}/profile-${Date.now()}.${extension}`
+
+      const { error: uploadError } = await supabase.storage
+        .from('community-profile-photos')
+        .upload(path, file, {
+          cacheControl: '3600',
+          upsert: false,
+          contentType: file.type,
+        })
+
+      if (uploadError) throw uploadError
+
+      const { data: publicUrlData } = supabase.storage
+        .from('community-profile-photos')
+        .getPublicUrl(path)
+
+      const avatarUrl = publicUrlData.publicUrl
+
+      const { error: profileError } = await supabase
+        .from('community_profiles')
+        .upsert(
+          {
+            user_id: profileUserId,
+            avatar_url: avatarUrl,
+            cover_url: profileData?.coverUrl ?? null,
+            tagline: profileTaglineDraft.trim(),
+            story: profileStoryDraft.trim(),
+            occupation: profileOccupationDraft.trim(),
+            college_activity: profileCollegeDraft.trim(),
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: 'user_id' },
+        )
+
+      if (profileError) throw profileError
+
+      setProfileData(current => ({
+        userId: profileUserId,
+        avatarUrl,
+        coverUrl: current?.coverUrl ?? null,
+        tagline: current?.tagline ?? profileTaglineDraft.trim(),
+        story: current?.story ?? profileStoryDraft.trim(),
+        occupation: current?.occupation ?? profileOccupationDraft.trim(),
+        collegeActivity: current?.collegeActivity ?? profileCollegeDraft.trim(),
+      }))
+    } catch (error) {
+      console.error('Community profile photo upload error:', error)
+      setErrorMessage(error instanceof Error ? error.message : 'We could not upload that photo.')
+    } finally {
+      setProfileUploading(false)
+      event.target.value = ''
+    }
+  }
+
+  const addCommunityProfileStory = async () => {
+    if (!profileUserId || profileUserId !== currentUserId) return
+    const content = profileStoryDraft.trim()
+    if (!content) return
+
+    setProfileStorySaving(true)
+    const { data, error } = await supabase
+      .from('community_profile_stories')
+      .insert({
+        user_id: profileUserId,
+        content,
+      })
+      .select('id, content, created_at')
+      .single()
+
+    if (error) {
+      console.error('Community story save error:', error)
+      setErrorMessage(`We could not publish your story: ${error.message}`)
+      setProfileStorySaving(false)
+      return
+    }
+
+    setProfileStories(current => [
+      {
+        id: data.id,
+        content: data.content,
+        createdAt: data.created_at,
+      },
+      ...current,
+    ].slice(0, 10))
+    setProfileStoryDraft('')
+    setProfileStoryComposerOpen(false)
+    setProfileStorySaving(false)
+  }
+
+  const openProfileChat = async () => {
+    if (!profileUserId || !currentUserId || profileUserId === currentUserId) return
+    setProfileChatOpen(true)
+    setProfileChatLoading(true)
+    setProfileChatMessages([])
+    setProfileChatDraft('')
+    try {
+      const [userOne, userTwo] = [currentUserId, profileUserId].sort()
+      let { data: conversation, error: conversationError } = await supabase
+        .from('community_conversations')
+        .select('id')
+        .eq('user_one_id', userOne)
+        .eq('user_two_id', userTwo)
+        .maybeSingle()
+      if (conversationError) throw conversationError
+      if (!conversation) {
+        const created = await supabase.from('community_conversations')
+          .insert({ user_one_id: userOne, user_two_id: userTwo })
+          .select('id').single()
+        if (created.error) throw created.error
+        conversation = created.data
+      }
+      setProfileChatConversationId(conversation.id)
+      const { data: messageRows, error: messageError } = await supabase
+        .from('community_messages')
+        .select('id, conversation_id, sender_id, content, created_at')
+        .eq('conversation_id', conversation.id)
+        .order('created_at', { ascending: true }).limit(200)
+      if (messageError) throw messageError
+      setProfileChatMessages((messageRows ?? []).map(row => ({
+        id: row.id, conversationId: row.conversation_id, senderId: row.sender_id,
+        content: row.content, createdAt: row.created_at,
+      })))
+    } catch (error) {
+      console.error('Could not open personal chat:', error)
+      setErrorMessage(error instanceof Error ? error.message : 'We could not open this chat.')
+      setProfileChatOpen(false)
+      setProfileChatConversationId(null)
+    } finally { setProfileChatLoading(false) }
+  }
+
+  const sendProfileChatMessage = async (event?: FormEvent) => {
+    event?.preventDefault()
+    const content = profileChatDraft.trim()
+    if (!content || !profileChatConversationId || !currentUserId || profileChatSending) return
+    setProfileChatSending(true)
+    const { data, error } = await supabase.from('community_messages')
+      .insert({ conversation_id: profileChatConversationId, sender_id: currentUserId, content })
+      .select('id, conversation_id, sender_id, content, created_at').single()
+    if (error) {
+      console.error('Could not send personal chat message:', error)
+      setErrorMessage(`We could not send your message: ${error.message}`)
+      setProfileChatSending(false); return
+    }
+    setProfileChatMessages(current => [...current, {
+      id: data.id, conversationId: data.conversation_id, senderId: data.sender_id,
+      content: data.content, createdAt: data.created_at,
+    }])
+    setProfileChatDraft('')
+    setProfileChatSending(false)
+  }
+
+  useEffect(() => {
+    if (!profileChatConversationId) return
+    const channel = supabase.channel(`community-chat-${profileChatConversationId}`)
+      .on('postgres_changes', {
+        event: 'INSERT', schema: 'public', table: 'community_messages',
+        filter: `conversation_id=eq.${profileChatConversationId}`,
+      }, payload => {
+        const row = payload.new as { id:string; conversation_id:string; sender_id:string; content:string; created_at:string }
+        setProfileChatMessages(current => current.some(message => message.id === row.id) ? current : [...current, {
+          id: row.id, conversationId: row.conversation_id, senderId: row.sender_id,
+          content: row.content, createdAt: row.created_at,
+        }])
+      }).subscribe()
+    return () => { void supabase.removeChannel(channel) }
+  }, [profileChatConversationId])
+
+  const profileAvatar = profileData?.avatarUrl
+  const profileCanEdit = Boolean(profileUserId && profileUserId === currentUserId)
+
+
   const loadCommunity = async () => {
     setLoading(true)
 
     const { data: currentUserResult } = await supabase.auth.getUser()
     setCurrentUserId(currentUserResult.user?.id ?? '')
+    if (currentUserResult.user?.id) {
+      await loadReportedContent(currentUserResult.user.id)
+    } else {
+      setReportedContentIds(new Set())
+    }
     setErrorMessage('')
 
     const [memberResult, questionResult, answerResult, postResult, reputationAnswerResult, reputationProfileResult] = await Promise.all([
@@ -278,6 +735,7 @@ export default function Community() {
         authorId: post.author_id,
         author: displayName,
         initials: initialsFor(displayName),
+        avatarUrl: post.author?.avatar_url ?? null,
         time: formatTime(post.created_at),
         title: post.title,
         body: post.content,
@@ -332,6 +790,58 @@ export default function Community() {
     setLoading(false)
   }
 
+  const loadNotificationPreferences = async (userId: string) => {
+    if (!userId) return
+
+    const { data, error } = await supabase
+      .from('community_notification_preferences')
+      .select('enabled, mentions, comments, accepted_answers')
+      .eq('user_id', userId)
+      .maybeSingle()
+
+    if (error) {
+      console.warn('Could not load notification preferences:', error.message)
+      return
+    }
+
+    if (data) {
+      setNotificationPreferences({
+        enabled: data.enabled !== false,
+        mentions: data.mentions !== false,
+        comments: data.comments !== false,
+        acceptedAnswers: data.accepted_answers !== false,
+      })
+    }
+  }
+
+  const saveNotificationPreferences = async (
+    changes: Partial<typeof notificationPreferences>,
+  ) => {
+    if (!currentUserId) return
+
+    const next = { ...notificationPreferences, ...changes }
+    setNotificationPreferences(next)
+    setNotificationPreferencesSaving(true)
+
+    const { error } = await supabase
+      .from('community_notification_preferences')
+      .upsert({
+        user_id: currentUserId,
+        enabled: next.enabled,
+        mentions: next.mentions,
+        comments: next.comments,
+        accepted_answers: next.acceptedAnswers,
+      }, { onConflict: 'user_id' })
+
+    if (error) {
+      console.warn('Could not save notification preferences:', error.message)
+      setErrorMessage(`We could not save notification preferences: ${error.message}`)
+      await loadNotificationPreferences(currentUserId)
+    }
+
+    setNotificationPreferencesSaving(false)
+  }
+
   const loadNotifications = async (userId: string) => {
     if (!userId) {
       setNotifications([])
@@ -350,8 +860,16 @@ export default function Community() {
       return
     }
 
+    const visible = (data ?? []).filter(row => {
+      if (!notificationPreferences.enabled) return false
+      if (row.type === 'MENTION' && !notificationPreferences.mentions) return false
+      if (row.type === 'REPLY' && !notificationPreferences.comments) return false
+      if (row.type === 'ACCEPTED_ANSWER' && !notificationPreferences.acceptedAnswers) return false
+      return true
+    })
+
     setNotifications(
-      (data ?? []).map(row => ({
+      visible.map(row => ({
         id: row.id,
         type: row.type,
         title: row.title,
@@ -364,23 +882,36 @@ export default function Community() {
     )
   }
 
-  const openNotificationTarget = (notification: CommunityNotification) => {
-    if (!notification.postId) return
+  const markNotificationRead = async (notificationId: string) => {
+    if (!currentUserId) return
 
-    setNotificationsOpen(false)
-    window.location.hash = `community-post-${notification.postId}`
+    const previous = notifications
 
-    window.setTimeout(() => {
-      document.getElementById(`community-post-${notification.postId}`)?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'center',
-      })
-    }, 0)
+    setNotifications(current =>
+      current.map(notification =>
+        notification.id === notificationId
+          ? { ...notification, isRead: true }
+          : notification,
+      ),
+    )
+
+    const { error } = await supabase
+      .from('community_notifications')
+      .update({ is_read: true })
+      .eq('id', notificationId)
+      .eq('user_id', currentUserId)
+
+    if (error) {
+      console.warn('Could not mark notification read:', error.message)
+      setNotifications(previous)
+    }
   }
 
-  const markNotificationsRead = async () => {
-    const unread = notifications.filter(notification => !notification.isRead)
-    if (!unread.length || !currentUserId) return
+  const markAllNotificationsRead = async () => {
+    if (!currentUserId) return
+
+    setNotificationsLoading(true)
+    const previous = notifications
 
     setNotifications(current =>
       current.map(notification => ({ ...notification, isRead: true })),
@@ -393,11 +924,31 @@ export default function Community() {
       .eq('is_read', false)
 
     if (error) {
-      console.warn('Could not mark notifications read:', error.message)
+      console.warn('Could not mark all notifications read:', error.message)
+      setNotifications(previous)
     }
+
+    setNotificationsLoading(false)
   }
 
-  
+  const openNotificationTarget = (notification: CommunityNotification) => {
+    if (!notification.postId) return
+
+    if (!notification.isRead) {
+      void markNotificationRead(notification.id)
+    }
+
+    setNotificationsOpen(false)
+    window.location.hash = `community-post-${notification.postId}`
+
+    window.setTimeout(() => {
+      document.getElementById(`community-post-${notification.postId}`)?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      })
+    }, 0)
+  }
+
   const toggleTopicFollow = async (topicName: string) => {
     const { data: authData } = await supabase.auth.getUser()
 
@@ -478,7 +1029,10 @@ useEffect(() => {
         setFollowedTopics((topicFollowRows ?? []).map(row => row.topic_name))
       }
 
-      void loadNotifications(userId)
+      void (async () => {
+        await loadNotificationPreferences(userId)
+        await loadNotifications(userId)
+      })()
 
       const { data: bookmarkRows, error: bookmarkError } = await supabase
         .from('community_bookmarks')
@@ -552,7 +1106,10 @@ useEffect(() => {
           setFollowedTopics((topicFollowRows ?? []).map(row => row.topic_name))
         })
 
-      void loadNotifications(userId)
+      void (async () => {
+        await loadNotificationPreferences(userId)
+        await loadNotifications(userId)
+      })()
 
       void supabase
         .from('community_bookmarks')
@@ -772,43 +1329,206 @@ useEffect(() => {
   }, [posts])
 
   const filteredPosts = useMemo(() => {
-    const q = search.trim().toLowerCase()
-    let result = posts
+    const normalize = (value: unknown) =>
+      String(value ?? '')
+        .toLowerCase()
+        .trim()
 
-    if (harbourArea === 'Ship Logs') result = result.filter(post => post.postType === 'SHIP_LOG')
-    else if (harbourArea === 'Wrecks') result = result.filter(post => post.postType === 'WRECK')
-    else if (harbourArea === 'Channels') result = result.filter(post => post.postType === 'DISCUSSION' || post.postType === 'QUESTION')
-    else if (harbourArea === 'Crew Rooms') result = []
-    else if (topics.some(topic => topic.name === harbourArea)) {
-      const selectedTopic = harbourArea.toLowerCase()
+    const searchWords = normalize(search)
+      .split(/\\s+/)
+      .filter(Boolean)
+
+    const authorQuery = normalize(searchAuthor)
+    const tagQuery = normalize(searchTag)
+
+    let result = [...posts]
+
+    if (searchType !== 'all') {
+      const typeMap = {
+        question: 'QUESTION',
+        discussion: 'DISCUSSION',
+        ship_log: 'SHIP_LOG',
+        wreck: 'WRECK',
+      } as const
+
+      result = result.filter(post => post.postType === typeMap[searchType])
+    }
+
+    // Keep the existing Harbour/Explore filtering.
+    if (harbourArea === 'Ship Logs') {
+      result = result.filter(post => post.postType === 'SHIP_LOG')
+    } else if (harbourArea === 'Wrecks') {
+      result = result.filter(post => post.postType === 'WRECK')
+    } else if (harbourArea === 'Channels') {
+      result = result.filter(
+        post =>
+          post.postType === 'DISCUSSION' ||
+          post.postType === 'QUESTION',
+      )
+    } else if (harbourArea === 'Crew Rooms') {
+      result = []
+    } else if (topics.some(topic => topic.name === harbourArea)) {
+      const selectedTopic = normalize(harbourArea)
       result = result.filter(post =>
-        post.tags.some(tag => tag.toLowerCase() === selectedTopic)
+        post.tags.some(tag => normalize(tag) === selectedTopic),
       )
     }
 
-    if (activeExplore === 'Unanswered') result = result.filter(post => post.replies === 0)
-    if (activeExplore === 'Rescue') result = result.filter(post => post.rescue)
-    if (activeExplore === 'Saved') result = result.filter(post => bookmarked.includes(post.id))
-    if (activeExplore === 'Following') {
-      result = result.filter(post =>
-        followedPosts.includes(post.id) ||
-        post.tags.some(tag =>
-          followedTopics.some(topic => topic.toLowerCase() === tag.toLowerCase()),
-        ),
+    if (activeExplore === 'Pinned') {
+      result = result.filter(post => post.pinned)
+    } else if (activeExplore === 'Unanswered') {
+      result = result.filter(post => post.replies === 0)
+    } else if (activeExplore === 'Saved') {
+      result = result.filter(post => bookmarked.includes(post.id))
+    } else if (activeExplore === 'Following') {
+      result = result.filter(post => followedPosts.includes(post.id))
+    } else if (activeExplore === 'Latest') {
+      result.sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() -
+          new Date(a.createdAt).getTime(),
+      )
+    } else if (activeExplore === 'Most Upvoted') {
+      result.sort((a, b) => b.votes - a.votes)
+    } else if (activeExplore === 'Trending') {
+      result.sort(
+        (a, b) =>
+          (b.views ?? 0) - (a.views ?? 0) ||
+          b.replies - a.replies ||
+          b.votes - a.votes,
       )
     }
-    if (activeExplore === 'Most Upvoted') result = [...result].sort((a, b) => b.votes - a.votes)
-    if (activeExplore === 'Trending') result = [...result].sort((a, b) => (b.views ?? 0) - (a.views ?? 0))
 
-    if (!q) return result
-    return result.filter(
-      post =>
-        post.title.toLowerCase().includes(q) ||
-        post.body.toLowerCase().includes(q) ||
-        post.tags.some(tag => tag.toLowerCase().includes(q)) ||
-        post.author.toLowerCase().includes(q),
-    )
-  }, [activeExplore, harbourArea, posts, search, bookmarked, followedPosts, followedTopics])
+    // Main search: every entered word can match title, body, tags, or author.
+    // This makes searches such as "react authentication" useful instead of
+    // requiring the exact phrase to exist in one field.
+    if (searchWords.length > 0) {
+      result = result
+        .map(post => {
+          const title = normalize(post.title)
+          const body = normalize(post.body)
+          const author = normalize(post.author)
+          const tags = post.tags.map(normalize).join(' ')
+
+          let score = 0
+          let matches = 0
+
+          for (const word of searchWords) {
+            let wordScore = 0
+
+            if (title === word) wordScore = Math.max(wordScore, 100)
+            else if (title.includes(word)) wordScore = Math.max(wordScore, 60)
+
+            if (tags.includes(word)) wordScore = Math.max(wordScore, 45)
+            if (author.includes(word)) wordScore = Math.max(wordScore, 35)
+            if (body.includes(word)) wordScore = Math.max(wordScore, 20)
+
+            if (wordScore > 0) {
+              matches += 1
+              score += wordScore
+            }
+          }
+
+          return {
+            post,
+            score,
+            matches,
+          }
+        })
+        .filter(item => item.matches === searchWords.length)
+        .sort(
+          (a, b) =>
+            b.score - a.score ||
+            b.matches - a.matches,
+        )
+        .map(item => item.post)
+    }
+
+    if (authorQuery) {
+      result = result.filter(post =>
+        normalize(post.author).includes(authorQuery),
+      )
+    }
+
+    if (tagQuery) {
+      result = result.filter(post =>
+        post.tags.some(tag => normalize(tag).includes(tagQuery)),
+      )
+    }
+
+    if (searchSort === 'newest') {
+      result.sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() -
+          new Date(a.createdAt).getTime(),
+      )
+    } else if (searchSort === 'active') {
+      result.sort(
+        (a, b) =>
+          b.replies * 3 +
+          b.votes -
+          (a.replies * 3 + a.votes),
+      )
+    } else if (searchSort === 'answered') {
+      result.sort((a, b) => b.replies - a.replies)
+    }
+
+    return [...result].sort((a, b) => {
+      const pinnedDifference = Number(b.pinned) - Number(a.pinned)
+      if (pinnedDifference !== 0) return pinnedDifference
+
+      if (searchSort === 'active') {
+        return (
+          b.replies * 3 +
+          b.votes -
+          (a.replies * 3 + a.votes)
+        )
+      }
+
+      if (searchSort === 'answered') {
+        return b.replies - a.replies
+      }
+
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    })
+  }, [
+    activeExplore,
+    bookmarked,
+    followedPosts,
+    harbourArea,
+    posts,
+    search,
+    searchAuthor,
+    searchSort,
+    searchTag,
+    searchType,
+  ])
+
+  const totalPages = Math.max(1, Math.ceil(filteredPosts.length / POSTS_PER_PAGE))
+
+  const paginatedPosts = useMemo(() => {
+    const start = (currentPage - 1) * POSTS_PER_PAGE
+    return filteredPosts.slice(start, start + POSTS_PER_PAGE)
+  }, [currentPage, filteredPosts])
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [filteredPosts])
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages)
+    }
+  }, [currentPage, totalPages])
+
+  const toggleQuestionPostExpansion = (postId: string) => {
+    setExpandedQuestionPosts(current => {
+      const next = new Set(current)
+      if (next.has(postId)) next.delete(postId)
+      else next.add(postId)
+      return next
+    })
+  }
 
   const toggleFollow = async (id: string) => {
     const { data: authData } = await supabase.auth.getUser()
@@ -913,6 +1633,36 @@ useEffect(() => {
     setBookmarked(current => [...current, id])
   }
 
+  const openSharePost = async (post: Post) => {
+    setSharePost(post)
+    setShareCopied(false)
+
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({
+          title: post.title,
+          text: post.body ? `${post.title}\n\n${post.body}` : post.title,
+          url: `${window.location.origin}/community?post=${encodeURIComponent(post.id)}`,
+        })
+        setSharePost(null)
+      } catch (error) {
+        // The user may have cancelled the native share sheet; keep the share dialog available.
+        if (error instanceof DOMException && error.name === 'AbortError') return
+      }
+    }
+  }
+
+  const copyPostLink = async () => {
+    if (!sharePost) return
+    const url = `${window.location.origin}/community?post=${encodeURIComponent(sharePost.id)}`
+    try {
+      await navigator.clipboard.writeText(url)
+      setShareCopied(true)
+    } catch {
+      setErrorMessage('We could not copy the post link. Please try again.')
+    }
+  }
+
   const toggleRescue = async (id: string) => {
     const { data: authData } = await supabase.auth.getUser()
 
@@ -956,6 +1706,213 @@ useEffect(() => {
 
     setRescueUpdatingPostId(null)
     setOpenPostMenu(null)
+  }
+
+  const editAnswer = (answer: CommunityAnswer) => {
+    if (!currentUserId || answer.authorId !== currentUserId) {
+      setErrorMessage('You can only edit your own replies.')
+      return
+    }
+
+    setEditingAnswerId(answer.id)
+    setEditingAnswerContent(answer.content)
+    setErrorMessage('')
+  }
+
+  const cancelEditAnswer = () => {
+    setEditingAnswerId(null)
+    setEditingAnswerContent('')
+  }
+
+  const saveEditAnswer = async (answer: CommunityAnswer) => {
+    if (!currentUserId || answer.authorId !== currentUserId) {
+      setErrorMessage('You can only edit your own replies.')
+      return
+    }
+
+    const content = editingAnswerContent.trim()
+    if (!content) {
+      setErrorMessage('Reply cannot be empty.')
+      return
+    }
+
+    setSavingAnswerId(answer.id)
+    setErrorMessage('')
+
+    const { error } = await supabase
+      .from('community_answers')
+      .update({ content })
+      .eq('id', answer.id)
+      .eq('author_id', currentUserId)
+
+    if (error) {
+      console.error('Answer edit error', error)
+      setErrorMessage(`We could not edit this reply: ${error.message}`)
+      setSavingAnswerId(null)
+      return
+    }
+
+    setAnswers(current => {
+      const next = { ...current }
+      for (const [postId, answerList] of Object.entries(next)) {
+        next[postId] = answerList.map(item =>
+          item.id === answer.id ? { ...item, content } : item,
+        )
+      }
+      return next
+    })
+
+    setEditingAnswerId(null)
+    setEditingAnswerContent('')
+    setSavingAnswerId(null)
+  }
+
+  const deleteAnswer = async (answer: CommunityAnswer) => {
+    const { data: authData } = await supabase.auth.getUser()
+
+    if (!authData.user) {
+      setErrorMessage('Please sign in before deleting a reply.')
+      return
+    }
+
+    if (answer.authorId !== authData.user.id) {
+      setErrorMessage('You can only delete your own replies.')
+      return
+    }
+
+    const confirmed = window.confirm('Delete this reply? This action cannot be undone.')
+    if (!confirmed) return
+
+    setDeletingAnswerId(answer.id)
+    setErrorMessage('')
+
+    const { error } = await supabase
+      .from('community_answers')
+      .delete()
+      .eq('id', answer.id)
+      .eq('author_id', authData.user.id)
+
+    if (error) {
+      console.error('Answer deletion error', error)
+      setErrorMessage(`We could not delete this reply: ${error.message}`)
+      setDeletingAnswerId(null)
+      return
+    }
+
+    setAnswers(current => {
+      const next = { ...current }
+      for (const [postId, answerList] of Object.entries(next)) {
+        next[postId] = answerList.filter(item => item.id !== answer.id)
+      }
+      return next
+    })
+
+    setEditingAnswerId(current => current === answer.id ? null : current)
+    setEditingAnswerContent(current => editingAnswerId === answer.id ? '' : current)
+    setDeletingAnswerId(null)
+  }
+
+
+  const loadReportedContent = async (userId: string) => {
+    const { data, error } = await supabase
+      .from('community_reports')
+      .select('post_id, answer_id')
+      .eq('reporter_id', userId)
+
+    if (error) {
+      console.error('Could not load existing Community reports:', error)
+      return
+    }
+
+    const ids = new Set<string>()
+    for (const row of data ?? []) {
+      if (row.post_id) ids.add(`question:${row.post_id}`)
+      if (row.answer_id) ids.add(`answer:${row.answer_id}`)
+    }
+    setReportedContentIds(ids)
+  }
+
+  const openReportModal = ({
+    type,
+    id,
+    postId,
+    title,
+  }: {
+    type: 'question' | 'answer'
+    id: string
+    postId: string
+    title: string
+  }) => {
+    if (reportedContentIds.has(`${type}:${id}`)) {
+      setErrorMessage('You have already reported this content.')
+      return
+    }
+
+    setReportTarget({ type, id, postId, title })
+    setReportReason('')
+    setReportDetails('')
+    setErrorMessage('')
+  }
+
+  const closeReportModal = () => {
+    if (reporting) return
+    setReportTarget(null)
+    setReportReason('')
+    setReportDetails('')
+  }
+
+  const submitReport = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+
+    if (!reportTarget) return
+
+    const { data: authData } = await supabase.auth.getUser()
+    if (!authData.user) {
+      setErrorMessage('Please sign in before reporting Community content.')
+      return
+    }
+
+    if (!reportReason) {
+      setErrorMessage('Please select a reason for your report.')
+      return
+    }
+
+    setReporting(true)
+    setErrorMessage('')
+
+    const { error } = await supabase
+      .from('community_reports')
+      .insert({
+        reporter_id: authData.user.id,
+        post_id: reportTarget.postId,
+        answer_id: reportTarget.type === 'answer' ? reportTarget.id : null,
+        reason: reportReason,
+        details: reportDetails.trim() || null,
+      })
+
+    if (error) {
+      console.error('Community report error', error)
+
+      if (error.code === '23505') {
+        setErrorMessage('You have already reported this content.')
+      } else {
+        setErrorMessage(`We could not submit your report: ${error.message}`)
+      }
+
+      setReporting(false)
+      return
+    }
+
+    setReporting(false)
+    setReportedContentIds(current => {
+      const next = new Set(current)
+      next.add(`${reportTarget.type}:${reportTarget.id}`)
+      return next
+    })
+    setReportTarget(null)
+    setReportReason('')
+    setReportDetails('')
+    setErrorMessage('Report submitted. Thank you for helping keep the Community safe.')
   }
 
   const editPost = async (id: string) => {
@@ -1040,6 +1997,54 @@ useEffect(() => {
     setEditingPostId(null)
     setEditingTitle('')
     setEditingBody('')
+  }
+
+  const togglePinnedPost = async (id: string) => {
+    const { data: authData } = await supabase.auth.getUser()
+
+    if (!authData.user) {
+      setErrorMessage('Please sign in before pinning a post.')
+      setOpenPostMenu(null)
+      return
+    }
+
+    const post = posts.find(item => item.id === id)
+    if (!post || post.authorId !== authData.user.id) {
+      setErrorMessage('You can only pin or unpin your own posts.')
+      setOpenPostMenu(null)
+      return
+    }
+
+    const nextPinned = !post.pinned
+    setPinUpdatingPostId(id)
+    setErrorMessage('')
+
+    const { error } = await supabase
+      .from('community_posts')
+      .update({ is_pinned: nextPinned })
+      .eq('id', id)
+      .eq('author_id', authData.user.id)
+
+    if (error) {
+      console.error('Post pin update error', error)
+      setErrorMessage(`We could not ${nextPinned ? 'pin' : 'unpin'} this post: ${error.message}`)
+      setPinUpdatingPostId(null)
+      setOpenPostMenu(null)
+      return
+    }
+
+    setPosts(current => {
+      const updated = current.map(postItem =>
+        postItem.id === id ? { ...postItem, pinned: nextPinned } : postItem,
+      )
+
+      return updated.sort(
+        (a, b) => Number(b.pinned) - Number(a.pinned),
+      )
+    })
+
+    setPinUpdatingPostId(null)
+    setOpenPostMenu(null)
   }
 
   const deletePost = async (id: string) => {
@@ -1240,6 +2245,62 @@ useEffect(() => {
     setVotingAnswerId(null)
   }
 
+
+  const renderCommunityMentions = (value: string) => {
+    const parts = value.split(/(@[A-Za-z0-9_][A-Za-z0-9_-]{1,30})/g)
+
+    return parts.map((part, index) =>
+      /^@[A-Za-z0-9_][A-Za-z0-9_-]{1,30}$/.test(part) ? (
+        <span
+          key={`community-mention-${index}`}
+          className="community-mention"
+          style={{
+            display: 'inline-block',
+            backgroundColor: '#e8efff',
+            color: '#1748d1',
+            borderRadius: '5px',
+            padding: '1px 5px',
+            fontWeight: 700,
+            lineHeight: 'inherit',
+          }}
+        >
+          {part}
+        </span>
+      ) : (
+        <Fragment key={`community-mention-text-${index}`}>{part}</Fragment>
+      ),
+    )
+  }
+
+  const createCommunityMentionNotifications = async ({
+    content,
+    postId,
+    answerId = null,
+    contextTitle,
+  }: {
+    content: string
+    postId: string
+    answerId?: string | null
+    contextTitle: string
+  }) => {
+    const { data, error } = await supabase.rpc('create_community_mention_notifications', {
+      p_content: content,
+      p_post_id: postId,
+      p_answer_id: answerId,
+      p_context_title: contextTitle,
+    })
+
+    if (error) {
+      console.error('Mention notification error:', error)
+      return
+    }
+
+    if (data && currentUserId) {
+      await loadNotifications(currentUserId)
+      await loadNotificationPreferences(currentUserId)
+    }
+  }
+
   const submitReply = async (postId: string) => {
     const content = (replyDrafts[postId] ?? '').trim()
     if (!content) return
@@ -1276,7 +2337,15 @@ useEffect(() => {
       .eq('id', authData.user.id)
       .maybeSingle()
 
-    const author = profile?.display_name || profile?.username || 'Harbour Member'
+    const metadata = authData.user.user_metadata as Record<string, unknown> | undefined
+    const author =
+      profile?.display_name?.trim() ||
+      profile?.username?.trim() ||
+      (typeof metadata?.full_name === 'string' ? metadata.full_name.trim() : '') ||
+      (typeof metadata?.name === 'string' ? metadata.name.trim() : '') ||
+      (typeof metadata?.user_name === 'string' ? metadata.user_name.trim() : '') ||
+      authData.user.email?.split('@')[0]?.trim() ||
+      'Harbour Member'
     const newAnswer: CommunityAnswer = {
       id: created.id,
       postId: created.post_id,
@@ -1301,14 +2370,21 @@ useEffect(() => {
     setSubmittingReply(null)
 
     const question = posts.find(item => item.id === postId)
+    await createCommunityMentionNotifications({
+      content,
+      postId,
+      answerId: created.id,
+      contextTitle: question?.title ?? 'a Community discussion',
+    })
+
     if (question && question.authorId !== authData.user.id) {
       const { error: notificationError } = await supabase
         .from('community_notifications')
         .insert({
           user_id: question.authorId,
           type: 'REPLY',
-          title: 'New reply to your question',
-          message: `${author} replied to “${question.title}”.`,
+          title: `@${author} commented on your post`,
+          message: `@${author} commented on “${question.title}”.`,
           post_id: postId,
           answer_id: created.id,
           is_read: false,
@@ -1316,6 +2392,47 @@ useEffect(() => {
 
       if (notificationError) {
         console.warn('Could not create reply notification:', notificationError.message)
+      }
+    }
+
+    // Notify everyone who follows this question when a new answer is posted.
+    // The question author already receives the normal comment notification above,
+    // so they are excluded here to avoid duplicate alerts. The answer author is
+    // also excluded so users never receive a notification for their own answer.
+    const { data: followerRows, error: followerError } = await supabase
+      .from('community_post_follows')
+      .select('user_id')
+      .eq('post_id', postId)
+
+    if (followerError) {
+      console.warn('Could not load followed-question members:', followerError.message)
+    } else {
+      const followerIds = Array.from(
+        new Set(
+          (followerRows ?? [])
+            .map(row => row.user_id)
+            .filter(userId => userId && userId !== authData.user.id && userId !== question?.authorId),
+        ),
+      )
+
+      if (followerIds.length > 0) {
+        const followedQuestionNotifications = followerIds.map(userId => ({
+          user_id: userId,
+          type: 'FOLLOWED_QUESTION_ACTIVITY',
+          title: `@${author} answered a question you follow`,
+          message: `@${author} answered “${question?.title ?? 'a question you follow'}”.`,
+          post_id: postId,
+          answer_id: created.id,
+          is_read: false,
+        }))
+
+        const { error: followedNotificationError } = await supabase
+          .from('community_notifications')
+          .insert(followedQuestionNotifications)
+
+        if (followedNotificationError) {
+          console.warn('Could not create followed-question notifications:', followedNotificationError.message)
+        }
       }
     }
   }
@@ -1527,19 +2644,31 @@ useEffect(() => {
       return
     }
 
-    const { error } = await supabase.from('community_posts').insert({
-      author_id: authData.user.id,
-      title,
-      content,
-      post_type: 'QUESTION',
-      tags: [selectedTopic],
-    })
+    const { data: createdQuestion, error } = await supabase
+      .from('community_posts')
+      .insert({
+        author_id: authData.user.id,
+        title,
+        content,
+        post_type: 'QUESTION',
+        tags: Array.from(new Set([selectedTopic, ...questionTags].map(tag => tag.trim()).filter(Boolean))).slice(0, 6),
+      })
+      .select('id')
+      .single()
 
     if (error) {
       console.error('Question creation error', error)
       setErrorMessage('We could not publish your question. Please try again.')
       setSubmitting(false)
       return
+    }
+
+    if (createdQuestion?.id) {
+      await createCommunityMentionNotifications({
+        content,
+        postId: createdQuestion.id,
+        contextTitle: title,
+      })
     }
 
     setQuestionTitle('')
@@ -1640,6 +2769,224 @@ useEffect(() => {
 
         .notification-wrap {
           position: relative;
+        }
+
+        .notification-mark-all {
+          border: 0;
+          background: transparent;
+          color: #315ea8;
+          font-size: 8px;
+          font-weight: 700;
+          padding: 3px 0;
+          cursor: pointer;
+        }
+
+        .notification-mark-all:disabled {
+          opacity: 0.55;
+          cursor: default;
+        }
+
+        .notification-mark-read {
+          flex: 0 0 auto;
+          width: 20px;
+          height: 20px;
+          border: 0;
+          border-radius: 50%;
+          background: transparent;
+          color: #315ea8;
+          font-size: 18px;
+          line-height: 12px;
+          padding: 0;
+          cursor: pointer;
+          opacity: 0.9;
+        }
+
+        .notification-mark-read:hover {
+          background: #edf3ff;
+        }
+
+        .notification-preferences-button {
+          border: 0;
+          background: transparent;
+          color: #315ea8;
+          font-size: 8px;
+          font-weight: 700;
+          padding: 3px 5px;
+          cursor: pointer;
+        }
+
+        .notification-preferences-button:hover {
+          text-decoration: underline;
+        }
+
+        .notification-preferences {
+          padding: 12px 15px 10px;
+          border-bottom: 1px solid #edf0f5;
+          background: #fbfcfe;
+        }
+
+        .notification-preferences-heading {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 8px;
+          margin-bottom: 8px;
+        }
+
+        .notification-preferences-title {
+          color: #18233c;
+          font-size: 10px;
+          font-weight: 700;
+        }
+
+        .notification-preferences-subtitle {
+          margin-top: 2px;
+          color: #7b8598;
+          font-size: 8px;
+          line-height: 1.4;
+        }
+
+        .notification-preferences-saving {
+          color: #315ea8;
+          font-size: 8px;
+          font-weight: 700;
+          white-space: nowrap;
+        }
+
+        .notification-preference-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          padding: 7px 0;
+          cursor: pointer;
+        }
+
+        .notification-preference-copy {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+
+        .notification-preference-copy strong {
+          color: #354157;
+          font-size: 9px;
+        }
+
+        .notification-preference-copy small {
+          color: #8993a5;
+          font-size: 7px;
+          line-height: 1.35;
+        }
+
+        .notification-preference-row input {
+          width: 14px;
+          height: 14px;
+          flex: 0 0 auto;
+          accent-color: #315ea8;
+          cursor: pointer;
+        }
+
+        .community-search-tools {
+          margin: 8px 0 10px;
+        }
+
+        .community-search-advanced-toggle {
+          border: 0;
+          background: transparent;
+          color: #315ea8;
+          font-size: 8px;
+          font-weight: 700;
+          padding: 2px 0;
+          cursor: pointer;
+        }
+
+        .community-search-advanced-bar {
+          width: 100%;
+          margin: 8px 0 10px;
+          padding: 8px 10px;
+          border: 1px solid #e1e6ee;
+          border-radius: 8px;
+          background: #fff;
+          box-sizing: border-box;
+        }
+
+        .community-search-advanced-title {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          min-height: 26px;
+          color: #354157;
+          font-size: 10px;
+          font-weight: 700;
+        }
+
+        .community-search-advanced-collapse {
+          border: 0;
+          background: transparent;
+          color: #315ea8;
+          font-size: 9px;
+          font-weight: 700;
+          padding: 4px 6px;
+          cursor: pointer;
+        }
+
+        .community-search-advanced {
+          display: grid;
+          grid-template-columns: 1fr 1fr 140px 140px auto;
+          gap: 6px;
+          align-items: center;
+          width: 100%;
+          margin-top: 7px;
+        }
+
+        .community-search-clear {
+          height: 30px;
+          border: 0;
+          background: transparent;
+          color: #68748a;
+          padding: 0 4px;
+          font-size: 9px;
+          font-weight: 650;
+          cursor: pointer;
+          white-space: nowrap;
+        }
+
+        .community-search-clear:hover {
+          color: #111827;
+          text-decoration: underline;
+        }
+
+.community-search-advanced input,
+        .community-search-advanced select {
+          min-width: 0;
+          height: 30px;
+          box-sizing: border-box;
+          border: 1px solid #d7dfeb;
+          border-radius: 7px;
+          background: #fff;
+          color: #354157;
+          padding: 0 9px;
+          font-size: 9px;
+          outline: none;
+        }
+
+        .community-search-advanced input:focus,
+        .community-search-advanced select:focus {
+          border-color: #9db6e5;
+        }
+
+        .dark-mode .community-search-advanced input,
+        .dark-mode .community-search-advanced select {
+          background: #10192b;
+          border-color: #35445f;
+          color: #edf2ff;
+        }
+
+        @media (max-width: 700px) {
+          .community-search-advanced {
+            grid-template-columns: 1fr;
+          }
         }
 
         .notification-button {
@@ -2867,6 +4214,725 @@ useEffect(() => {
           box-shadow: 0 0 0 1px rgba(84, 170, 156, 0.04);
         }
 
+
+        .community-profile-hero { max-width:1120px; margin:0 auto 14px; overflow:hidden; border:1px solid #e1e6ee; border-radius:12px; background:#fff; box-shadow:0 8px 25px rgba(26,45,76,.05); }
+        .community-profile-cover { position:relative; height:190px; background:radial-gradient(circle at 76% 34%,rgba(73,136,221,.58),transparent 24%),radial-gradient(circle at 25% 25%,rgba(139,76,209,.52),transparent 27%),linear-gradient(135deg,#142b52 0%,#26386e 48%,#16223d 100%); background-size:cover; background-position:center; }
+        .community-profile-cover::before,.community-profile-cover::after{content:"";position:absolute;border-radius:50%;border:1px solid rgba(255,255,255,.12)}
+        .community-profile-cover::before{width:220px;height:220px;right:9%;top:-110px}.community-profile-cover::after{width:150px;height:150px;left:15%;top:42px}.community-profile-cover-overlay{position:absolute;inset:0;background:linear-gradient(180deg,rgba(9,18,35,.05),rgba(9,18,35,.38))}
+        .community-profile-hero-content{position:relative;display:flex;gap:18px;padding:0 22px 20px}.community-profile-hero-avatar{width:116px;height:116px;flex:0 0 116px;margin-top:-58px;border:4px solid #fff;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#eaf0f8;color:#315ea8;font-size:31px;font-weight:800;box-shadow:0 7px 22px rgba(17,31,56,.2)}.community-profile-hero-avatar img{width:100%;height:100%;object-fit:cover;display:block}
+        .community-profile-hero-copy{min-width:0;flex:1;padding-top:13px}.community-profile-hero-title-row{display:flex;justify-content:space-between;gap:15px}.community-profile-hero-title-row h2{margin:0;color:#1a2740;font-size:20px;line-height:25px}.community-profile-hero-title-row p{margin:3px 0 0;color:#738198;font-size:10px}.community-profile-hero-actions{display:flex;gap:7px;align-items:flex-start}.community-profile-message-button{border:1px solid #1748d1;border-radius:7px;background:#1748d1;color:#fff;padding:8px 14px;font-size:9px;font-weight:750;cursor:pointer;box-shadow:0 5px 13px rgba(23,72,209,.18)}.community-profile-message-button:hover{background:#123daf}.community-profile-badges{display:flex;gap:7px;flex-wrap:wrap;margin-top:11px}.community-profile-badges span{border:1px solid #dce4f1;border-radius:999px;background:#f7f9fd;color:#52617a;padding:5px 8px;font-size:8px}
+        .community-profile-story-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.community-profile-story-card{min-width:0;overflow:hidden;border:1px solid #e5e9f0;border-radius:9px;background:#fff}.community-profile-story-card-art{height:76px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;background:linear-gradient(135deg,#273b6c,#172642)}.community-profile-story-card-art.story-art-1{background:linear-gradient(135deg,#51346d,#182f59)}.community-profile-story-card-art.story-art-2{background:linear-gradient(135deg,#315b73,#25365c)}.community-profile-story-card-art.story-art-3{background:linear-gradient(135deg,#5b466e,#233b5e)}.community-profile-story-card>div:last-child{padding:7px}.community-profile-story-card strong{display:block;color:#354157;font-size:8px;line-height:1.45;max-height:34px;overflow:hidden}.community-profile-story-card small{display:block;margin-top:3px;color:#9aa3b2;font-size:7px}
+        .community-profile-chat{position:fixed;right:24px;bottom:22px;z-index:1400;width:345px;height:465px;display:flex;flex-direction:column;overflow:hidden;border:1px solid #29476f;border-radius:12px;background:#fff;box-shadow:0 20px 55px rgba(7,18,38,.28)}.community-profile-chat-header{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 12px;border-bottom:1px solid #e6eaf0;background:#fbfcff}.community-profile-chat-header>button{border:0;background:transparent;color:#7b8799;font-size:20px;cursor:pointer}.community-profile-chat-person{display:flex;align-items:center;gap:8px;min-width:0}.community-profile-chat-avatar{width:32px;height:32px;flex:0 0 32px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#eaf0f8;color:#315ea8;font-size:9px;font-weight:800}.community-profile-chat-avatar img{width:100%;height:100%;object-fit:cover}.community-profile-chat-person strong,.community-profile-chat-person span{display:block}.community-profile-chat-person strong{color:#25334c;font-size:10px}.community-profile-chat-person span{margin-top:2px;color:#8a95a8;font-size:7px}.community-profile-chat-body{flex:1;overflow:auto;padding:13px 11px;background:#f7f9fc;display:flex;flex-direction:column;gap:8px}.community-profile-chat-empty{margin:auto;color:#8a95a8;font-size:9px;text-align:center}.community-profile-chat-message{max-width:78%;display:flex;flex-direction:column;gap:3px}.community-profile-chat-message span{padding:8px 10px;border-radius:10px;color:#39465d;background:#fff;border:1px solid #e1e6ee;font-size:9px;line-height:1.45;white-space:pre-wrap;overflow-wrap:anywhere}.community-profile-chat-message small{color:#9aa3b2;font-size:6px;padding:0 3px}.community-profile-chat-message.mine{align-self:flex-end;align-items:flex-end}.community-profile-chat-message.mine span{background:#1760dc;border-color:#1760dc;color:#fff;border-bottom-right-radius:3px}.community-profile-chat-message.theirs{align-self:flex-start;align-items:flex-start}.community-profile-chat-message.theirs span{border-bottom-left-radius:3px}.community-profile-chat-composer{display:flex;gap:7px;padding:9px;border-top:1px solid #e3e8ef;background:#fff}.community-profile-chat-composer input{flex:1;min-width:0;border:1px solid #d5dce7;border-radius:8px;padding:9px;outline:none;font:inherit;font-size:9px}.community-profile-chat-composer input:focus{border-color:#6f91d1}.community-profile-chat-composer button{width:34px;border:1px solid #1760dc;border-radius:8px;background:#1760dc;color:#fff;cursor:pointer}.community-profile-chat-composer button:disabled{opacity:.55;cursor:not-allowed}
+        .community-profile-avatar-trigger,
+        .community-profile-name-trigger {
+          border: 0;
+          margin: 0;
+          padding: 0;
+          background: transparent;
+          font: inherit;
+          cursor: pointer;
+        }
+
+        .community-profile-avatar-trigger {
+          display: inline-flex;
+          border-radius: 50%;
+        }
+
+        .community-profile-name-trigger {
+          color: inherit;
+          font-size: 8px;
+          font-weight: 700;
+          text-align: left;
+        }
+
+        .community-profile-name-trigger:hover {
+          text-decoration: underline;
+        }
+
+        .community-profile-dashboard {
+          position: fixed;
+          inset: 0;
+          z-index: 1200;
+          background: #f5f7fb;
+          overflow: auto;
+        }
+
+        .community-profile-dashboard-shell {
+          min-height: 100%;
+          display: grid;
+          grid-template-columns: 230px minmax(0, 1fr);
+        }
+
+        .community-profile-dashboard-sidebar {
+          min-height: 100vh;
+          box-sizing: border-box;
+          border-right: 1px solid #e1e6ee;
+          background: #ffffff;
+          padding: 20px 14px;
+        }
+
+        .community-profile-dashboard-back {
+          width: 100%;
+          border: 0;
+          border-radius: 7px;
+          background: transparent;
+          color: #69758a;
+          padding: 9px 8px;
+          text-align: left;
+          font-size: 10px;
+          cursor: pointer;
+        }
+
+        .community-profile-dashboard-back:hover {
+          background: #f3f6fa;
+          color: #263653;
+        }
+
+        .community-profile-dashboard-user {
+          padding: 28px 8px 24px;
+          text-align: center;
+        }
+
+        .community-profile-dashboard-avatar {
+          width: 82px;
+          height: 82px;
+          margin: 0 auto 12px;
+          border-radius: 50%;
+          overflow: hidden;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: #edf2f9;
+          color: #315ea8;
+          font-size: 23px;
+          font-weight: 800;
+        }
+
+        .community-profile-dashboard-avatar img,
+        .community-profile-dashboard-editor-avatar img,
+        .avatar img {
+          width: 100%;
+          height: 100%;
+          display: block;
+          object-fit: cover;
+        }
+
+        .community-profile-dashboard-user h1 {
+          margin: 0;
+          color: #1f2d46;
+          font-size: 15px;
+          overflow-wrap: anywhere;
+        }
+
+        .community-profile-dashboard-user p {
+          margin: 4px 0 0;
+          color: #8994a7;
+          font-size: 9px;
+          line-height: 1.45;
+        }
+
+        .community-profile-dashboard-nav {
+          display: grid;
+          gap: 4px;
+        }
+
+        .community-profile-dashboard-nav-item {
+          width: 100%;
+          border: 0;
+          border-radius: 8px;
+          background: transparent;
+          color: #68758a;
+          padding: 10px 11px;
+          text-align: left;
+          font-size: 10px;
+          cursor: pointer;
+        }
+
+        .community-profile-dashboard-nav-item span {
+          display: inline-block;
+          width: 18px;
+        }
+
+        .community-profile-dashboard-nav-item.active {
+          background: #eef3fa;
+          color: #315ea8;
+          font-weight: 700;
+        }
+
+        .community-profile-dashboard-main {
+          min-width: 0;
+          box-sizing: border-box;
+          padding: 34px 38px 45px;
+        }
+
+        .community-profile-dashboard-header {
+          max-width: 1120px;
+          margin: 0 auto 24px;
+          display: flex;
+          justify-content: space-between;
+          gap: 20px;
+        }
+
+        .community-profile-dashboard-header-actions {
+          display: flex;
+          align-items: flex-start;
+          gap: 8px;
+        }
+
+        .community-profile-dashboard-eyebrow {
+          color: #71809a;
+          font-size: 8px;
+          font-weight: 800;
+          letter-spacing: .14em;
+        }
+
+        .community-profile-dashboard-header h2 {
+          margin: 5px 0 4px;
+          color: #1f2d46;
+          font-size: 22px;
+        }
+
+        .community-profile-dashboard-header p {
+          margin: 0;
+          color: #7d899c;
+          font-size: 10px;
+        }
+
+        .community-profile-dashboard-edit,
+        .community-profile-dashboard-small-button,
+        .community-profile-dashboard-save {
+          border: 1px solid #d8e1ef;
+          border-radius: 7px;
+          background: #ffffff;
+          color: #315ea8;
+          padding: 8px 11px;
+          font-size: 9px;
+          font-weight: 700;
+          cursor: pointer;
+        }
+
+        .community-profile-dashboard-edit:hover,
+        .community-profile-dashboard-small-button:hover {
+          background: #eef3fa;
+        }
+
+        .community-profile-dashboard-close {
+          width: 34px;
+          height: 34px;
+          flex: 0 0 34px;
+          border: 1px solid #dfe5ee;
+          border-radius: 8px;
+          background: #ffffff;
+          color: #7c8799;
+          font-size: 20px;
+          cursor: pointer;
+        }
+
+        .community-profile-dashboard-stats {
+          max-width: 1120px;
+          margin: 0 auto 14px;
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 12px;
+        }
+
+        .community-profile-dashboard-stats > div {
+          border: 1px solid #e1e6ee;
+          border-radius: 10px;
+          background: #ffffff;
+          padding: 15px;
+        }
+
+        .community-profile-dashboard-stats span {
+          display: block;
+          color: #8994a7;
+          font-size: 8px;
+          text-transform: uppercase;
+          letter-spacing: .08em;
+        }
+
+        .community-profile-dashboard-stats strong {
+          display: block;
+          margin-top: 6px;
+          color: #263653;
+          font-size: 21px;
+        }
+
+        .community-profile-dashboard-grid {
+          max-width: 1120px;
+          margin: 0 auto;
+          display: grid;
+          grid-template-columns: minmax(0, 1.45fr) minmax(280px, .9fr);
+          gap: 14px;
+        }
+
+        .community-profile-dashboard-panel {
+          min-width: 0;
+          border: 1px solid #e1e6ee;
+          border-radius: 10px;
+          background: #ffffff;
+          padding: 17px;
+        }
+
+        .community-profile-dashboard-full-panel {
+          max-width: 1120px;
+          margin: 0 auto;
+        }
+
+        .community-profile-dashboard-panel-heading {
+          display: flex;
+          justify-content: space-between;
+          gap: 10px;
+          padding-bottom: 13px;
+        }
+
+        .community-profile-dashboard-panel-heading span {
+          color: #8994a7;
+          font-size: 7px;
+          font-weight: 800;
+          letter-spacing: .1em;
+        }
+
+        .community-profile-dashboard-panel-heading h3 {
+          margin: 4px 0 0;
+          color: #263653;
+          font-size: 13px;
+        }
+
+        .community-profile-dashboard-panel-heading > strong {
+          color: #315ea8;
+          font-size: 12px;
+        }
+
+        .community-profile-dashboard-about {
+          display: grid;
+          gap: 0;
+          border-top: 1px solid #edf0f5;
+        }
+
+        .community-profile-dashboard-about > div {
+          display: grid;
+          grid-template-columns: 130px minmax(0, 1fr);
+          gap: 15px;
+          border-bottom: 1px solid #edf0f5;
+          padding: 13px 2px;
+        }
+
+        .community-profile-dashboard-about span {
+          color: #8994a7;
+          font-size: 8px;
+          font-weight: 800;
+          letter-spacing: .06em;
+        }
+
+        .community-profile-dashboard-about strong {
+          color: #354157;
+          font-size: 9px;
+          line-height: 1.55;
+          overflow-wrap: anywhere;
+        }
+
+        .community-profile-dashboard-post-list,
+        .community-profile-dashboard-overview {
+          border-top: 1px solid #edf0f5;
+        }
+
+        .community-profile-dashboard-post {
+          width: 100%;
+          display: grid;
+          grid-template-columns: 64px minmax(0, 1fr) 18px;
+          align-items: center;
+          gap: 11px;
+          border: 0;
+          border-bottom: 1px solid #edf0f5;
+          background: transparent;
+          padding: 12px 3px;
+          text-align: left;
+          cursor: pointer;
+        }
+
+        .community-profile-dashboard-post:hover {
+          background: #fafbfd;
+        }
+
+        .community-profile-dashboard-post-type {
+          color: #71809a;
+          font-size: 7px;
+          font-weight: 800;
+        }
+
+        .community-profile-dashboard-post-info {
+          min-width: 0;
+        }
+
+        .community-profile-dashboard-post-info strong {
+          display: block;
+          overflow: hidden;
+          color: #354157;
+          font-size: 10px;
+          line-height: 1.45;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .community-profile-dashboard-post-info small {
+          display: block;
+          margin-top: 3px;
+          color: #919bad;
+          font-size: 8px;
+        }
+
+        .community-profile-dashboard-story-composer {
+          display: grid;
+          gap: 8px;
+          margin: 0 0 13px;
+          border: 1px solid #e1e6ee;
+          border-radius: 8px;
+          padding: 10px;
+        }
+
+        .community-profile-dashboard-story-composer textarea,
+        .community-profile-dashboard-editor textarea,
+        .community-profile-dashboard-editor input {
+          width: 100%;
+          box-sizing: border-box;
+          border: 1px solid #dce3ed;
+          border-radius: 7px;
+          background: #ffffff;
+          color: #354157;
+          padding: 9px 10px;
+          outline: none;
+          font: inherit;
+          font-size: 9px;
+        }
+
+        .community-profile-dashboard-story-composer textarea:focus,
+        .community-profile-dashboard-editor textarea:focus,
+        .community-profile-dashboard-editor input:focus {
+          border-color: #7a9cdb;
+          box-shadow: 0 0 0 2px rgba(49, 94, 168, .08);
+        }
+
+        .community-profile-dashboard-story-list {
+          display: grid;
+          gap: 0;
+          border-top: 1px solid #edf0f5;
+        }
+
+        .community-profile-dashboard-story {
+          display: flex;
+          gap: 10px;
+          border-bottom: 1px solid #edf0f5;
+          padding: 12px 2px;
+        }
+
+        .community-profile-dashboard-story-dot {
+          width: 7px;
+          height: 7px;
+          flex: 0 0 7px;
+          margin-top: 4px;
+          border-radius: 50%;
+          background: #6e8fc8;
+        }
+
+        .community-profile-dashboard-story strong {
+          display: block;
+          color: #354157;
+          font-size: 9px;
+          line-height: 1.55;
+          overflow-wrap: anywhere;
+        }
+
+        .community-profile-dashboard-story small {
+          display: block;
+          margin-top: 4px;
+          color: #919bad;
+          font-size: 8px;
+        }
+
+        .community-profile-dashboard-activity {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 8px;
+        }
+
+        .community-profile-dashboard-activity > div {
+          border: 1px solid #edf0f5;
+          border-radius: 8px;
+          padding: 13px;
+        }
+
+        .community-profile-dashboard-activity strong,
+        .community-profile-dashboard-activity span {
+          display: block;
+        }
+
+        .community-profile-dashboard-activity strong {
+          color: #263653;
+          font-size: 18px;
+        }
+
+        .community-profile-dashboard-activity span {
+          margin-top: 4px;
+          color: #8994a7;
+          font-size: 8px;
+        }
+
+        .community-profile-dashboard-editor {
+          max-width: 1120px;
+          margin: 0 auto 14px;
+          display: grid;
+          grid-template-columns: 150px minmax(0, 1fr);
+          gap: 18px;
+          border: 1px solid #dce4ef;
+          border-radius: 10px;
+          background: #ffffff;
+          padding: 16px;
+        }
+
+        .community-profile-dashboard-editor-photo {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 7px;
+          text-align: center;
+        }
+
+        .community-profile-dashboard-editor-avatar {
+          width: 92px;
+          height: 92px;
+          border-radius: 50%;
+          overflow: hidden;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: #edf2f9;
+          color: #315ea8;
+          font-size: 24px;
+          font-weight: 800;
+        }
+
+        .community-profile-dashboard-upload {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          border: 1px solid #d8e1ef;
+          border-radius: 7px;
+          background: #ffffff;
+          color: #315ea8;
+          padding: 7px 10px;
+          font-size: 9px;
+          font-weight: 700;
+          cursor: pointer;
+        }
+
+        .community-profile-dashboard-upload input {
+          display: none;
+        }
+
+        .community-profile-dashboard-editor-photo small {
+          color: #9aa4b5;
+          font-size: 7px;
+        }
+
+        .community-profile-dashboard-editor-fields {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 10px;
+        }
+
+        .community-profile-dashboard-editor-fields label {
+          display: grid;
+          gap: 5px;
+        }
+
+        .community-profile-dashboard-editor-fields label > span {
+          color: #69758a;
+          font-size: 8px;
+          font-weight: 700;
+        }
+
+        .community-profile-dashboard-editor-wide {
+          grid-column: 1 / -1;
+        }
+
+        .community-profile-dashboard-editor-actions {
+          grid-column: 1 / -1;
+          display: flex;
+          justify-content: flex-end;
+        }
+
+        .community-profile-dashboard-save {
+          background: #eef3fa;
+        }
+
+        .community-profile-dashboard-save:disabled {
+          opacity: .6;
+          cursor: not-allowed;
+        }
+
+        .community-profile-dashboard-empty,
+        .community-profile-dashboard-loading {
+          margin: 0;
+          padding: 20px 2px;
+          color: #8994a7;
+          font-size: 10px;
+        }
+
+        .dark-mode .community-profile-hero,.dark-mode .community-profile-story-card,.dark-mode .community-profile-chat,.dark-mode .community-profile-chat-header,.dark-mode .community-profile-chat-composer{background:#10192b;border-color:#29374f}.dark-mode .community-profile-hero-title-row h2,.dark-mode .community-profile-story-card strong,.dark-mode .community-profile-chat-person strong{color:#edf2ff}.dark-mode .community-profile-badges span{background:#162238;border-color:#30415d;color:#aab6ca}.dark-mode .community-profile-chat-body{background:#0c1525}.dark-mode .community-profile-chat-message span{background:#111c2e;border-color:#2b3b54;color:#edf2ff}.dark-mode .community-profile-chat-message.mine span{background:#1760dc;border-color:#1760dc;color:#fff}
+
+        .dark-mode .community-profile-dashboard {
+          background: #0b1322;
+        }
+
+        .dark-mode .community-profile-dashboard-sidebar,
+        .dark-mode .community-profile-dashboard-stats > div,
+        .dark-mode .community-profile-dashboard-panel,
+        .dark-mode .community-profile-dashboard-editor,
+        .dark-mode .community-profile-dashboard-close,
+        .dark-mode .community-profile-dashboard-edit,
+        .dark-mode .community-profile-dashboard-small-button,
+        .dark-mode .community-profile-dashboard-upload {
+          background: #10192b;
+          border-color: #29374f;
+        }
+
+        .dark-mode .community-profile-dashboard-user h1,
+        .dark-mode .community-profile-dashboard-header h2,
+        .dark-mode .community-profile-dashboard-panel-heading h3,
+        .dark-mode .community-profile-dashboard-stats strong,
+        .dark-mode .community-profile-dashboard-about strong,
+        .dark-mode .community-profile-dashboard-story strong,
+        .dark-mode .community-profile-dashboard-activity strong {
+          color: #edf2ff;
+        }
+
+        .dark-mode .community-profile-dashboard-nav-item {
+          color: #9ca9bd;
+        }
+
+        .dark-mode .community-profile-dashboard-nav-item.active {
+          background: #162238;
+          color: #a9c4f5;
+        }
+
+        .dark-mode .community-profile-dashboard-post,
+        .dark-mode .community-profile-dashboard-about > div,
+        .dark-mode .community-profile-dashboard-story,
+        .dark-mode .community-profile-dashboard-post-list,
+        .dark-mode .community-profile-dashboard-story-list {
+          border-color: #29374f;
+        }
+
+        .dark-mode .community-profile-dashboard-post:hover,
+        .dark-mode .community-profile-dashboard-back:hover,
+        .dark-mode .community-profile-dashboard-edit:hover,
+        .dark-mode .community-profile-dashboard-small-button:hover {
+          background: #162238;
+        }
+
+        .dark-mode .community-profile-dashboard-editor input,
+        .dark-mode .community-profile-dashboard-editor textarea,
+        .dark-mode .community-profile-dashboard-story-composer,
+        .dark-mode .community-profile-dashboard-story-composer textarea {
+          background: #0d1728;
+          border-color: #34435d;
+          color: #edf2ff;
+        }
+
+        @media (max-width: 850px) {
+          .community-profile-cover{height:150px}.community-profile-hero-content{padding-left:14px;padding-right:14px}.community-profile-hero-avatar{width:92px;height:92px;flex-basis:92px;margin-top:-46px}.community-profile-hero-title-row{flex-direction:column}.community-profile-hero-actions{align-self:flex-start}.community-profile-chat{right:12px;bottom:12px;width:min(345px,calc(100vw - 24px))}
+          .community-profile-dashboard-shell {
+            grid-template-columns: 1fr;
+          }
+
+          .community-profile-dashboard-sidebar {
+            min-height: auto;
+            border-right: 0;
+            border-bottom: 1px solid #e1e6ee;
+            padding: 12px;
+          }
+
+          .community-profile-dashboard-user {
+            display: flex;
+            align-items: center;
+            text-align: left;
+            gap: 10px;
+            padding: 15px 8px;
+          }
+
+          .community-profile-dashboard-avatar {
+            width: 58px;
+            height: 58px;
+            flex-basis: 58px;
+            margin: 0;
+            font-size: 17px;
+          }
+
+          .community-profile-dashboard-nav {
+            grid-template-columns: repeat(5, 1fr);
+          }
+
+          .community-profile-dashboard-nav-item {
+            text-align: center;
+            padding: 8px 4px;
+            font-size: 8px;
+          }
+
+          .community-profile-dashboard-main {
+            padding: 24px 16px 35px;
+          }
+
+          .community-profile-dashboard-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .community-profile-dashboard-editor {
+            grid-template-columns: 1fr;
+          }
+
+          .community-profile-dashboard-editor-photo {
+            flex-direction: row;
+            align-items: center;
+            flex-wrap: wrap;
+          }
+        }
+
+        @media (max-width: 560px) {
+          .community-profile-dashboard-stats {
+            grid-template-columns: repeat(2, 1fr);
+          }
+
+          .community-profile-dashboard-header {
+            gap: 10px;
+          }
+
+          .community-profile-dashboard-header h2 {
+            font-size: 18px;
+          }
+
+          .community-profile-dashboard-header-actions {
+            flex-shrink: 0;
+          }
+
+          .community-profile-dashboard-editor-fields {
+            grid-template-columns: 1fr;
+          }
+
+          .community-profile-dashboard-editor-wide {
+            grid-column: auto;
+          }
+
+          .community-profile-dashboard-post {
+            grid-template-columns: 48px minmax(0, 1fr) 15px;
+          }
+
+          .community-profile-dashboard-about > div {
+            grid-template-columns: 1fr;
+            gap: 5px;
+          }
+        }
+
         .post-header {
           display: flex;
           align-items: center;
@@ -2899,6 +4965,106 @@ useEffect(() => {
           width: calc(100% - 192px);
           margin-right: 192px;
           overflow: visible;
+        }
+
+        .community-answer-edit {
+          width: 100%;
+          margin-top: 4px;
+        }
+
+        .community-answer-edit-input {
+          width: 100%;
+          min-height: 88px;
+          box-sizing: border-box;
+          resize: vertical;
+          border: 1px solid #d7dfeb;
+          border-radius: 8px;
+          padding: 9px 10px;
+          background: #ffffff;
+          color: inherit;
+          font: inherit;
+          font-size: 10px;
+          line-height: 1.5;
+          outline: none;
+        }
+
+        .community-answer-edit-input:focus {
+          border-color: #9db6e5;
+          box-shadow: 0 0 0 2px rgba(36, 85, 174, 0.08);
+        }
+
+        .community-answer-edit-actions {
+          display: flex;
+          gap: 5px;
+          margin-top: 6px;
+        }
+
+        .community-report-modal {
+          width: min(430px, calc(100vw - 32px));
+        }
+
+        .community-report-context {
+          padding: 8px 10px;
+          margin-bottom: 12px;
+          border: 1px solid #edf0f5;
+          border-radius: 8px;
+          background: #f8fafc;
+          color: #3c485c;
+          font-size: 10px;
+          line-height: 1.45;
+        }
+
+        .community-report-label {
+          display: block;
+          margin: 10px 0 5px;
+          color: #4c5870;
+          font-size: 9px;
+          font-weight: 700;
+        }
+
+        .community-report-label span {
+          font-weight: 500;
+          color: #8995aa;
+        }
+
+        .community-report-modal select,
+        .community-report-modal textarea {
+          width: 100%;
+          box-sizing: border-box;
+          border: 1px solid #d7dfeb;
+          border-radius: 8px;
+          background: #fff;
+          color: #273247;
+          font: inherit;
+          font-size: 10px;
+          padding: 9px 10px;
+          outline: none;
+        }
+
+        .community-report-modal textarea {
+          resize: vertical;
+          min-height: 88px;
+          line-height: 1.5;
+        }
+
+        .community-report-modal select:focus,
+        .community-report-modal textarea:focus {
+          border-color: #9db6e5;
+          box-shadow: 0 0 0 2px rgba(36, 85, 174, 0.08);
+        }
+
+        .community-mention {
+          display: inline-block;
+          background: #e8efff !important;
+          color: #1748d1 !important;
+          border-radius: 5px;
+          padding: 1px 5px;
+          font-weight: 700;
+        }
+
+        .dark-mode .community-mention {
+          background: #24385f;
+          color: #a9beff;
         }
 
         .question-inline-ad {
@@ -2988,8 +5154,48 @@ useEffect(() => {
           color: #758096;
           font-size: 9px;
         }
+        .post-pin-button {
+          width: 18px;
+          height: 18px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          margin-left: 4px;
+          padding: 0;
+          border: 0;
+          background: transparent;
+          cursor: pointer;
+          flex: 0 0 18px;
+        }
 
-        .pinned {
+        .post-pin-icon {
+          width: 14px;
+          height: 14px;
+          display: block;
+          overflow: visible;
+        }
+
+        .post-pin-icon path {
+          fill: #fff;
+          stroke: #000;
+          stroke-width: 1.5;
+          stroke-linejoin: round;
+        }
+
+        .post-pin-button.active .post-pin-icon path {
+          fill: #000;
+          stroke: #000;
+        }
+
+        .post-pin-button:hover .post-pin-icon {
+          transform: translateY(-1px);
+        }
+
+        .post-pin-button:disabled {
+          cursor: wait;
+        }
+
+.pinned {
           color: #59657a;
           background: #f1f4f8;
           padding: 2px 5px;
@@ -3103,6 +5309,45 @@ useEffect(() => {
           cursor: wait;
         }
 
+        .post-menu-report {
+          width: 100%;
+          border: 0;
+          background: transparent;
+          color: #000 !important;
+          text-align: left;
+          border-radius: 6px;
+          padding: 8px 10px;
+          font-family: inherit;
+          font-size: 11px;
+          font-weight: 400;
+          line-height: 16px;
+          cursor: pointer;
+        }
+
+        .post-menu-report:disabled {
+          opacity: .55;
+          cursor: default;
+          color: #7b8493 !important;
+          background: transparent;
+        }
+
+        .post-menu-report:hover {
+          background: #f1f5ff;
+          color: #000 !important;
+        }
+
+        .post-menu-follow,
+        .post-menu-rescue,
+        .post-menu-edit,
+        .post-menu-delete,
+        .post-menu-report {
+          color: #000 !important;
+          font-family: inherit;
+          font-size: 11px;
+          font-weight: 400;
+          line-height: 16px;
+        }
+
         .post-menu-disabled {
           display: block;
           padding: 8px 10px;
@@ -3184,8 +5429,8 @@ useEffect(() => {
         .post-title {
           margin: 0 0 4px;
           color: #141d33;
-          font-size: 13px;
-          line-height: 16px;
+          font-size: 11px;
+          line-height: 14px;
           font-weight: 650;
           letter-spacing: -0.1px;
         }
@@ -3195,6 +5440,31 @@ useEffect(() => {
           color: #68748a;
           font-size: 9px;
           line-height: 13px;
+        }
+
+        .question-post-body-collapsed {
+          display: -webkit-box;
+          -webkit-box-orient: vertical;
+          -webkit-line-clamp: 3;
+          overflow: hidden;
+        }
+
+        .see-full-post-button {
+          display: inline-flex;
+          align-items: center;
+          border: 0;
+          padding: 0;
+          margin: -2px 0 9px;
+          background: transparent;
+          color: #68748a;
+          font-size: 9px;
+          font-weight: 650;
+          cursor: pointer;
+        }
+
+        .see-full-post-button:hover {
+          color: #68748a;
+          text-decoration: underline;
         }
 
         .tags {
@@ -3545,8 +5815,8 @@ useEffect(() => {
         }
 
         .post.neo .post-title {
-          font-size: 15px;
-          line-height: 18px;
+          font-size: 13px;
+          line-height: 16px;
           max-width: 360px;
         }
 
@@ -3942,6 +6212,50 @@ useEffect(() => {
         }
 
         .reserved-space.large-reserved { min-height: 135px; }
+
+        .community-pagination {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-wrap: wrap;
+          gap: 6px;
+          padding: 14px 0 18px;
+        }
+
+        .community-pagination-button {
+          min-width: 32px;
+          height: 32px;
+          padding: 0 10px;
+          border: 1px solid #d7deea;
+          border-radius: 7px;
+          background: #fff;
+          color: #42516a;
+          font-size: 9px;
+          font-weight: 650;
+          cursor: pointer;
+        }
+
+        .community-pagination-button:hover:not(:disabled) {
+          border-color: #8ca8dd;
+          color: #1748d1;
+        }
+
+        .community-pagination-button.active {
+          border-color: #1748d1;
+          background: #1748d1;
+          color: #fff;
+        }
+
+        .community-pagination-button:disabled {
+          opacity: .45;
+          cursor: not-allowed;
+        }
+
+        .community-pagination-summary {
+          margin: 0 7px;
+          color: #77849a;
+          font-size: 9px;
+        }
 
         .empty-community {
           min-height: 310px;
@@ -4482,6 +6796,32 @@ useEffect(() => {
           cursor: wait;
         }
 
+
+      .share-action svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+      .share-post-backdrop { position: fixed; inset: 0; z-index: 1600; display: flex; align-items: center; justify-content: center; padding: 20px; background: rgba(2, 8, 18, .72); backdrop-filter: blur(8px); }
+      .share-post-modal { width: min(520px, 100%); border: 1px solid #203451; border-radius: 18px; background: #071322; box-shadow: 0 24px 80px rgba(0,0,0,.48); color: #eaf1ff; padding: 20px; }
+      .share-post-modal-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+      .share-post-modal-header span { font-size: 10px; letter-spacing: .14em; color: #7f9bbd; font-weight: 800; }
+      .share-post-modal-header h2 { margin: 4px 0 0; font-size: 21px; }
+      .share-post-modal-header button { width: 32px; height: 32px; border: 1px solid #223653; border-radius: 9px; background: #0b192b; color: #b8c9df; font-size: 20px; cursor: pointer; }
+      .share-post-preview { border: 1px solid #1b2d47; border-radius: 13px; background: #09192b; padding: 15px; margin-bottom: 14px; }
+      .share-post-preview strong { display: block; font-size: 15px; line-height: 1.45; }
+      .share-post-preview p { margin: 8px 0 0; color: #9eb0c8; font-size: 13px; line-height: 1.55; max-height: 62px; overflow: hidden; }
+      .share-post-copy { width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 12px; border: 1px solid #29466c; border-radius: 12px; background: #0c1e34; color: #edf5ff; padding: 13px 15px; cursor: pointer; font-weight: 700; }
+      .share-post-copy:hover { background: #102640; }
+      .share-post-copy > span:last-child { color: #8db7eb; font-size: 12px; }
+      .share-post-hint { margin-top: 11px; color: #7187a3; font-size: 11px; line-height: 1.5; }
+      .question-tags-builder { margin: 10px 0 14px; }
+      .question-tags-builder-label { display:flex; align-items:center; gap:8px; font-size:12px; font-weight:700; color:#26384f; margin-bottom:7px; }
+      .question-tags-builder-label span { font-weight:500; color:#8190a4; }
+      .question-tags-builder-row { display:flex; gap:8px; }
+      .question-tags-builder-row input { flex:1; min-width:0; }
+      .question-tags-builder-row button { border:1px solid #d4dce7; border-radius:8px; background:#fff; color:#17263b; padding:0 12px; font-weight:700; cursor:pointer; }
+      .question-tags-builder-row button:disabled { opacity:.5; cursor:not-allowed; }
+      .question-tags-builder-list { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+      .question-tags-builder-list button { border:0; border-radius:999px; background:#edf3fb; color:#315d91; padding:5px 9px; font-size:12px; cursor:pointer; }
+      .tag { cursor:pointer; }
+      .pinned { display:inline-flex; align-items:center; gap:5px; }
       `}</style>
 
       <header className="topbar">
@@ -4506,9 +6846,7 @@ useEffect(() => {
               type="button"
               className={`notification-button ${notificationsOpen ? 'active' : ''}`}
               onClick={() => {
-                const nextOpen = !notificationsOpen
-                setNotificationsOpen(nextOpen)
-                if (nextOpen) void markNotificationsRead()
+                setNotificationsOpen(current => !current)
               }}
               aria-label={`Notifications${notifications.filter(notification => !notification.isRead).length ? `, ${notifications.filter(notification => !notification.isRead).length} unread` : ''}`}
               aria-expanded={notificationsOpen}
@@ -4529,6 +6867,24 @@ useEffect(() => {
                     <div className="notification-title">Notifications</div>
                     <div className="notification-subtitle">Recent community activity</div>
                   </div>
+                  {notifications.some(notification => !notification.isRead) && (
+                    <button
+                      type="button"
+                      className="notification-mark-all"
+                      onClick={() => void markAllNotificationsRead()}
+                      disabled={notificationsLoading}
+                    >
+                      {notificationsLoading ? 'Saving…' : 'Mark all as read'}
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="notification-preferences-button"
+                    onClick={() => setNotificationPreferencesOpen(current => !current)}
+                    aria-expanded={notificationPreferencesOpen}
+                  >
+                    Settings
+                  </button>
                   <button
                     type="button"
                     className="notification-close"
@@ -4538,6 +6894,46 @@ useEffect(() => {
                     ×
                   </button>
                 </div>
+
+                {notificationPreferencesOpen && (
+                  <div className="notification-preferences" aria-label="Notification preferences">
+                    <div className="notification-preferences-heading">
+                      <div>
+                        <div className="notification-preferences-title">Notification preferences</div>
+                        <div className="notification-preferences-subtitle">
+                          Choose which Community alerts you receive.
+                        </div>
+                      </div>
+                      {notificationPreferencesSaving && (
+                        <span className="notification-preferences-saving">Saving…</span>
+                      )}
+                    </div>
+
+                    {[
+                      ['enabled', 'Community notifications', 'Turn all Community notifications on or off.'],
+                      ['mentions', 'Mentions', 'When someone mentions you.'],
+                      ['comments', 'Comments on my posts', 'When someone comments on your question.'],
+                      ['acceptedAnswers', 'Accepted answers', 'When your answer is accepted.'],
+                    ].map(([key, label, description]) => (
+                      <label className="notification-preference-row" key={key}>
+                        <span className="notification-preference-copy">
+                          <strong>{label}</strong>
+                          <small>{description}</small>
+                        </span>
+                        <input
+                          type="checkbox"
+                          checked={notificationPreferences[key as keyof typeof notificationPreferences]}
+                          onChange={event =>
+                            void saveNotificationPreferences({
+                              [key]: event.target.checked,
+                            } as Partial<typeof notificationPreferences>)
+                          }
+                          disabled={notificationPreferencesSaving}
+                        />
+                      </label>
+                    ))}
+                  </div>
+                )}
 
                 {notifications.length ? (
                   <div className="notification-list">
@@ -4556,13 +6952,32 @@ useEffect(() => {
                         }}
                       >
                         <div className="notification-icon">
-                          {notification.type === 'ACCEPTED_ANSWER' ? '✓' : '↳'}
+                          {notification.type === 'MENTION'
+                            ? '@'
+                            : notification.type === 'ACCEPTED_ANSWER'
+                              ? '✓'
+                              : notification.type === 'FOLLOWED_QUESTION_ACTIVITY'
+                                ? '＋'
+                                : '↳'}
                         </div>
                         <div className="notification-copy">
                           <div className="notification-item-title">{notification.title}</div>
                           <div className="notification-item-message">{notification.message}</div>
                           <div className="notification-item-time">{formatTime(notification.createdAt)}</div>
                         </div>
+                        {!notification.isRead && (
+                          <button
+                            type="button"
+                            className="notification-mark-read"
+                            onClick={event => {
+                              event.stopPropagation()
+                              void markNotificationRead(notification.id)
+                            }}
+                            aria-label="Mark notification as read"
+                          >
+                            •
+                          </button>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -4694,6 +7109,84 @@ useEffect(() => {
           </button>
         </div>
 
+        <div className="community-search-tools">
+          <div className="community-search-advanced-bar">
+            <div className="community-search-advanced-title">
+              <span>Advanced search</span>
+              <button
+                type="button"
+                className="community-search-advanced-collapse"
+                onClick={() => setShowAdvancedSearch(current => !current)}
+                aria-expanded={showAdvancedSearch}
+              >
+                {showAdvancedSearch ? 'Hide' : 'Show'}
+              </button>
+            </div>
+
+            {showAdvancedSearch && (
+              <div className="community-search-advanced">
+                <input
+                  type="search"
+                  value={searchAuthor}
+                  onChange={event => setSearchAuthor(event.target.value)}
+                  placeholder="Author"
+                  aria-label="Search by author"
+                />
+                <input
+                  type="search"
+                  value={searchTag}
+                  onChange={event => setSearchTag(event.target.value)}
+                  placeholder="Tag"
+                  aria-label="Search by tag"
+                />
+                <select
+                  value={searchType}
+                  onChange={event =>
+                    setSearchType(
+                      event.target.value as 'all' | 'question' | 'discussion' | 'ship_log' | 'wreck',
+                    )
+                  }
+                  aria-label="Filter by post type"
+                >
+                  <option value="all">All types</option>
+                  <option value="question">Questions</option>
+                  <option value="discussion">Discussions</option>
+                  <option value="ship_log">Ship logs</option>
+                  <option value="wreck">Wrecks</option>
+                </select>
+                <select
+                  value={searchSort}
+                  onChange={event =>
+                    setSearchSort(event.target.value as 'relevance' | 'newest' | 'active' | 'answered')
+                  }
+                  aria-label="Sort search results"
+                >
+                  <option value="relevance">Relevance</option>
+                  <option value="newest">Newest</option>
+                  <option value="active">Most active</option>
+                  <option value="answered">Most answered</option>
+                </select>
+                {(search || searchAuthor || searchTag || searchType !== 'all' || searchSort !== 'relevance') && (
+                  <button
+                    type="button"
+                    className="community-search-clear"
+                    onClick={() => {
+                      setSearch('')
+                      setSearchAuthor('')
+                      setSearchTag('')
+                      setSearchType('all')
+                      setSearchSort('relevance')
+                    }}
+                    aria-label="Clear search filters"
+                  >
+                    Clear filters
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
         <div className="layout">
           <aside className="left-column">
             <section className="panel explore-panel">
@@ -4723,6 +7216,10 @@ useEffect(() => {
                 {
                   name: 'Saved',
                   path: 'M6 4.5A1.5 1.5 0 0 1 7.5 3h9A1.5 1.5 0 0 1 18 4.5V21l-6-3.5L6 21V4.5Z',
+                },
+                {
+                  name: 'Pinned',
+                  path: 'M7 3h10l-1.5 6 3 3v2H13v7h-2v-7H5v-2l3-3L7 3Z',
                 },
               ].map(({ name, path }) => (
                 <button
@@ -4876,12 +7373,33 @@ useEffect(() => {
             {loading ? (
               <section className="feed-loading">Loading the Harbour…</section>
             ) : filteredPosts.length > 0 ? (
-              filteredPosts.map((post, postIndex) => (
+              paginatedPosts.map((post, postIndex) => (
                 <Fragment key={post.id}>
                 <article id={`community-post-${post.id}`} className={`post${(postIndex + 1) % 8 === 0 ? ' post-with-inline-ad' : ''}`}>
                   <div className="post-header">
-                    <div className="avatar">{post.initials}</div>
-                    <span className="author">{post.author}</span>
+                    <button
+                      type="button"
+                      className="community-profile-avatar-trigger"
+                      onClick={() => void openCommunityProfile(post.authorId, post.author)}
+                      aria-label={`View ${post.author}'s profile`}
+                      title={`View ${post.author}'s profile`}
+                    >
+                      <span className="avatar">
+                        {post.avatarUrl ? (
+                          <img src={post.avatarUrl} alt="" />
+                        ) : (
+                          post.initials
+                        )}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      className="community-profile-name-trigger"
+                      onClick={() => void openCommunityProfile(post.authorId, post.author)}
+                      title={`View ${post.author}'s profile`}
+                    >
+                      {post.author}
+                    </button>
                     {reputationScoreFor(post.authorId) > 0 && (
                       <span className="author-reputation" title="Community reputation based on contributions">
                         Rep {reputationScoreFor(post.authorId)}
@@ -4889,6 +7407,24 @@ useEffect(() => {
                     )}
                     <span className="dot">•</span>
                     <span className="time">{post.time}</span>
+                    <button
+                      type="button"
+                      className={`post-pin-button${post.pinned ? ' active' : ''}`}
+                      onClick={() => void togglePinnedPost(post.id)}
+                      disabled={pinUpdatingPostId === post.id}
+                      aria-label={post.pinned ? 'Unpin post' : 'Pin post'}
+                      title={post.pinned ? 'Unpin post' : 'Pin post'}
+                    >
+                      <svg
+                        className="post-pin-icon"
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                      >
+                        <path
+                          d="M8 3h8l-1.5 6 3 3v2H13v7h-2v-7H6v-2l3-3L8 3Z"
+                        />
+                      </svg>
+                    </button>
                     {post.pinned && <span className="pinned">Pinned</span>}
                     {post.rescue && <span className="rescue-badge">Rescue</span>}
                     {(postIndex + 1) % 8 === 0 && (
@@ -4949,9 +7485,39 @@ useEffect(() => {
                               >
                               {deletingPostId === post.id ? 'Deleting…' : 'Delete post'}
                               </button>
+                              <button
+                                type="button"
+                                className="post-menu-report"
+                                onClick={() => {
+                                  openReportModal({
+                                    type: 'question',
+                                    id: post.id,
+                                    postId: post.id,
+                                    title: post.title,
+                                  })
+                                  setOpenPostMenu(null)
+                                }}
+                                disabled={reportedContentIds.has(`question:${post.id}`)}
+                              >
+                                {reportedContentIds.has(`question:${post.id}`) ? 'Reported' : 'Report Post'}
+                              </button>
                             </>
                           ) : (
-                            <span className="post-menu-disabled">No actions available</span>
+                            <button
+                              type="button"
+                              className="post-menu-report"
+                              onClick={() => {
+                                openReportModal({
+                                  type: 'question',
+                                  id: post.id,
+                                  postId: post.id,
+                                  title: post.title,
+                                })
+                                setOpenPostMenu(null)
+                              }}
+                            >
+                              Report Post
+                            </button>
                           )}
                         </div>
                       )}
@@ -4995,7 +7561,25 @@ useEffect(() => {
                     ) : (
                       <>
                         <h2 className="post-title">{post.title}</h2>
-                        {post.body && <p className="post-body">{post.body}</p>}
+                        {post.body && (
+                          <>
+                            <p
+                              className={`post-body${post.postType === 'QUESTION' && !expandedQuestionPosts.has(post.id) ? ' question-post-body-collapsed' : ''}`}
+                            >
+                              {renderCommunityMentions(post.body)}
+                            </p>
+                            {post.postType === 'QUESTION' && (
+                              <button
+                                type="button"
+                                className="see-full-post-button"
+                                onClick={() => toggleQuestionPostExpansion(post.id)}
+                                aria-expanded={expandedQuestionPosts.has(post.id)}
+                              >
+                                {expandedQuestionPosts.has(post.id) ? 'Show less' : 'See full post'}
+                              </button>
+                            )}
+                          </>
+                        )}
                       </>
                     )}
                     <div className="tags">
@@ -5090,6 +7674,19 @@ useEffect(() => {
                         </svg>
                         <span>{bookmarked.includes(post.id) ? 'Saved' : 'Save'}</span>
                       </button>
+
+                      <button
+                        type="button"
+                        className="premium-action share-action"
+                        onClick={() => void openSharePost(post)}
+                        aria-label={`Share ${post.title}`}
+                      >
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                          <path d="M18 8a3 3 0 1 0-2.83-4A3 3 0 0 0 15 5c0 .32.05.63.14.92l-6.33 3.6A3 3 0 0 0 6 8a3 3 0 1 0 2.81 4.02l6.33 3.6A3 3 0 0 0 15 17a3 3 0 1 0 .97-2.2l-6.31-3.59c.22-.37.34-.79.34-1.21 0-.1 0-.2-.02-.3l6.32-3.59A3 3 0 0 0 18 8Z" />
+                        </svg>
+                        <span>Share</span>
+                      </button>
+
                     </div>
 
                     {openReplies === post.id && (
@@ -5097,7 +7694,10 @@ useEffect(() => {
                         {loadingReplies === post.id ? (
                           <div className="reply-loading">Loading replies…</div>
                         ) : answers[post.id]?.length ? (
-                          answers[post.id].map(answer => (
+                          [...answers[post.id]].sort((a, b) => {
+                            if (a.isAccepted === b.isAccepted) return 0
+                            return a.isAccepted ? -1 : 1
+                          }).map(answer => (
                             <div
                               className={`reply-item ${answer.isAccepted ? 'accepted-answer' : ''}`}
                               key={answer.id}
@@ -5106,6 +7706,42 @@ useEffect(() => {
                               <div className="reply-main">
                                 <div className="reply-meta">
                                   <span className="reply-author">{answer.author}</span>
+                      {currentUserId === answer.authorId && editingAnswerId !== answer.id && (
+                        <button
+                          type="button"
+                          className="premium-action"
+                          onClick={() => editAnswer(answer)}
+                          aria-label="Edit reply"
+                        >
+                          Edit
+                        </button>
+                      )}
+                      {currentUserId === answer.authorId && editingAnswerId !== answer.id && (
+                        <button
+                          type="button"
+                          className="premium-action"
+                          onClick={() => void deleteAnswer(answer)}
+                          disabled={deletingAnswerId === answer.id}
+                          aria-label="Delete reply"
+                        >
+                          {deletingAnswerId === answer.id ? 'Deleting…' : 'Delete'}
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        className="premium-action"
+                        onClick={() =>
+                          openReportModal({
+                            type: 'answer',
+                            id: answer.id,
+                            postId: post.id,
+                            title: post.title,
+                          })
+                        }
+                        aria-label="Report reply"
+                      >
+                        Report
+                      </button>
                                   <span>•</span>
                                   <span>{formatTime(answer.createdAt)}</span>
                                   <div className="answer-vote-controls" aria-label="Answer voting">
@@ -5141,7 +7777,38 @@ useEffect(() => {
                                     </span>
                                   )}
                                 </div>
-                                <p className="reply-content">{answer.content}</p>
+                                {editingAnswerId === answer.id ? (
+                        <div className="community-answer-edit">
+                          <textarea
+                            value={editingAnswerContent}
+                            onChange={event => setEditingAnswerContent(event.target.value)}
+                            className="community-answer-edit-input"
+                            rows={4}
+                            autoFocus
+                            disabled={savingAnswerId === answer.id}
+                          />
+                          <div className="community-answer-edit-actions">
+                            <button
+                              type="button"
+                              className="premium-action"
+                              onClick={() => saveEditAnswer(answer)}
+                              disabled={savingAnswerId === answer.id}
+                            >
+                              {savingAnswerId === answer.id ? 'Saving…' : 'Save'}
+                            </button>
+                            <button
+                              type="button"
+                              className="premium-action"
+                              onClick={cancelEditAnswer}
+                              disabled={savingAnswerId === answer.id}
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="reply-content">{renderCommunityMentions(answer.content)}</p>
+                      )}
                                 {post.authorId === currentUserId && (
                                   <button
                                     type="button"
@@ -5255,7 +7922,39 @@ useEffect(() => {
                 </button>
               </section>
             )}
-          </section>
+          {filteredPosts.length > 0 && totalPages > 1 && (
+            <nav className="community-pagination" aria-label="Community post pages">
+              <button
+                type="button"
+                className="community-pagination-button"
+                onClick={() => setCurrentPage(page => Math.max(1, page - 1))}
+                disabled={currentPage === 1}
+              >
+                Previous
+              </button>
+              {Array.from({ length: totalPages }, (_, index) => index + 1).map(page => (
+                <button
+                  type="button"
+                  key={page}
+                  className={`community-pagination-button${currentPage === page ? ' active' : ''}`}
+                  onClick={() => setCurrentPage(page)}
+                  aria-current={currentPage === page ? 'page' : undefined}
+                >
+                  {page}
+                </button>
+              ))}
+              <button
+                type="button"
+                className="community-pagination-button"
+                onClick={() => setCurrentPage(page => Math.min(totalPages, page + 1))}
+                disabled={currentPage === totalPages}
+              >
+                Next
+              </button>
+              <span className="community-pagination-summary">Page {currentPage} of {totalPages}</span>
+            </nav>
+          )}
+        </section>
 
           <aside className="right-column">
             <section className="panel right-card">
@@ -5370,6 +8069,80 @@ useEffect(() => {
         </div>
       )}
 
+      {reportTarget && (
+        <div className="modal-backdrop" onClick={closeReportModal}>
+          <form
+            className="modal community-report-modal"
+            onClick={event => event.stopPropagation()}
+            onSubmit={submitReport}
+          >
+            <div className="modal-head">
+              <h2>Report {reportTarget.type === 'answer' ? 'reply' : 'question'}</h2>
+              <button
+                type="button"
+                className="close"
+                onClick={closeReportModal}
+                disabled={reporting}
+                aria-label="Close report form"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="community-report-context">
+              <strong>{reportTarget.title}</strong>
+            </div>
+
+            <label className="community-report-label" htmlFor="community-report-reason">
+              Why are you reporting this?
+            </label>
+            <select
+              id="community-report-reason"
+              value={reportReason}
+              onChange={event => setReportReason(event.target.value)}
+              required
+            >
+              <option value="">Select a reason</option>
+              <option value="Spam">Spam</option>
+              <option value="Harassment">Harassment</option>
+              <option value="Inappropriate content">Inappropriate content</option>
+              <option value="Misleading information">Misleading information</option>
+              <option value="Other">Other</option>
+            </select>
+
+            <label className="community-report-label" htmlFor="community-report-details">
+              Additional details <span>(optional)</span>
+            </label>
+            <textarea
+              id="community-report-details"
+              value={reportDetails}
+              onChange={event => setReportDetails(event.target.value)}
+              placeholder="Tell us what needs attention…"
+              rows={4}
+              maxLength={1000}
+            />
+
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="modal-cancel-button"
+                onClick={closeReportModal}
+                disabled={reporting}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="modal-post-button"
+                disabled={reporting || !reportReason}
+              >
+                {reporting ? 'Submitting…' : 'Submit Report'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
       {askOpen && (
         <div className="modal-backdrop" onClick={() => setAskOpen(false)}>
           <form className="modal" onClick={event => event.stopPropagation()} onSubmit={submitQuestion}>
@@ -5418,6 +8191,31 @@ useEffect(() => {
                 </div>
               )}
             </div>
+            <div className="question-tags-builder">
+              <div className="question-tags-builder-label">Tags <span>up to 5 additional tags</span></div>
+              <div className="question-tags-builder-row">
+                <input
+                  value={questionTagDraft}
+                  onChange={event => setQuestionTagDraft(event.target.value)}
+                  onKeyDown={event => {
+                    if (event.key === 'Enter') {
+                      event.preventDefault()
+                      addQuestionTag()
+                    }
+                  }}
+                  placeholder="Add a tag, e.g. React"
+                  maxLength={40}
+                />
+                <button type="button" onClick={addQuestionTag} disabled={questionTags.length >= 5}>Add tag</button>
+              </div>
+              {questionTags.length > 0 && (
+                <div className="question-tags-builder-list">
+                  {questionTags.map(tag => (
+                    <button type="button" key={tag} onClick={() => setQuestionTags(current => current.filter(item => item !== tag))}>#{tag} ×</button>
+                  ))}
+                </div>
+              )}
+            </div>
             <textarea
               value={questionBody}
               onChange={event => setQuestionBody(event.target.value)}
@@ -5443,6 +8241,114 @@ useEffect(() => {
           </form>
         </div>
       )}
-    </main>
+    
+      {sharePost && (
+        <div className="share-post-backdrop" onClick={() => setSharePost(null)}>
+          <div className="share-post-modal" role="dialog" aria-modal="true" aria-labelledby="share-post-title" onClick={event => event.stopPropagation()}>
+            <div className="share-post-modal-header">
+              <div>
+                <span>SHARE POST</span>
+                <h2 id="share-post-title">Share this post</h2>
+              </div>
+              <button type="button" onClick={() => setSharePost(null)} aria-label="Close share dialog">×</button>
+            </div>
+            <div className="share-post-preview">
+              <strong>{sharePost.title}</strong>
+              {sharePost.body && <p>{sharePost.body.length > 180 ? `${sharePost.body.slice(0, 180).trim()}…` : sharePost.body}</p>}
+            </div>
+            <button type="button" className="share-post-copy" onClick={() => void copyPostLink()}>
+              <span>{shareCopied ? '✓ Link copied' : 'Copy post link'}</span>
+              <span>{shareCopied ? 'Copied' : 'Copy'}</span>
+            </button>
+            <div className="share-post-hint">Anyone with the link can open this Community post.</div>
+          </div>
+        </div>
+      )}
+
+      {profileUserId && (
+        <div className="community-profile-dashboard" role="dialog" aria-modal="true" aria-label={`${profileUserName} Community profile`}>
+          <div className="community-profile-dashboard-shell">
+            <aside className="community-profile-dashboard-sidebar">
+              <button type="button" className="community-profile-dashboard-back" onClick={() => setProfileUserId(null)}>← Back to Community</button>
+              <div className="community-profile-dashboard-user">
+                <div className="community-profile-dashboard-avatar">{profileAvatar ? <img src={profileAvatar} alt={`${profileUserName}'s profile`} /> : initialsFor(profileUserName)}</div>
+                <h1>{profileUserName}</h1><p>{profileData?.tagline || 'Harbour Community Member'}</p>
+              </div>
+              <nav className="community-profile-dashboard-nav" aria-label="Profile dashboard">
+                {([['overview','⌂','Overview'],['posts','◈','Posts'],['questions','?','Questions'],['answers','↩','Answers'],['activity','◷','Activity']] as const).map(([tab,icon,label]) => (
+                  <button type="button" key={tab} className={`community-profile-dashboard-nav-item ${profileTab === tab ? 'active' : ''}`} onClick={() => setProfileTab(tab)}><span>{icon}</span>{label}</button>
+                ))}
+              </nav>
+            </aside>
+
+            <section className="community-profile-dashboard-main">
+              <div className="community-profile-hero">
+                <div className="community-profile-cover" style={profileData?.coverUrl ? {backgroundImage:`url(${profileData.coverUrl})`} : undefined}><div className="community-profile-cover-overlay" /></div>
+                <div className="community-profile-hero-content">
+                  <div className="community-profile-hero-avatar">{profileAvatar ? <img src={profileAvatar} alt={`${profileUserName}'s profile`} /> : initialsFor(profileUserName)}</div>
+                  <div className="community-profile-hero-copy">
+                    <div className="community-profile-hero-title-row">
+                      <div><h2>{profileUserName}</h2><p>{profileData?.tagline || 'Harbour Community Member'}</p></div>
+                      <div className="community-profile-hero-actions">
+                        {profileCanEdit && <button type="button" className="community-profile-dashboard-edit" onClick={() => setProfileEditing(current => !current)}>{profileEditing ? 'Close editor' : 'Edit Profile'}</button>}
+                        {!profileCanEdit && currentUserId && <button type="button" className="community-profile-message-button" onClick={() => void openProfileChat()}>Message</button>}
+                        <button type="button" className="community-profile-dashboard-close" onClick={() => setProfileUserId(null)} aria-label="Close profile">×</button>
+                      </div>
+                    </div>
+                    <div className="community-profile-badges"><span>⚡ Community Member</span>{profileData?.occupation && <span>💼 {profileData.occupation}</span>}{profileData?.collegeActivity && <span>🎓 {profileData.collegeActivity}</span>}</div>
+                  </div>
+                </div>
+              </div>
+
+              {profileLoading ? <div className="community-profile-dashboard-loading">Loading profile…</div> : <>
+                {profileCanEdit && profileEditing && <section className="community-profile-dashboard-editor">
+                  <div className="community-profile-dashboard-editor-photo">
+                    <div className="community-profile-dashboard-editor-avatar">{profileAvatar ? <img src={profileAvatar} alt="" /> : initialsFor(profileUserName)}</div>
+                    <label className="community-profile-dashboard-upload">{profileUploading ? 'Uploading…' : 'Upload photo'}<input type="file" accept="image/*" onChange={uploadCommunityProfilePhoto} disabled={profileUploading}/></label>
+                    <small>JPG, PNG, WEBP · max 5 MB</small>
+                  </div>
+                  <div className="community-profile-dashboard-editor-fields">
+                    <label><span>Tagline</span><input value={profileTaglineDraft} onChange={event => setProfileTaglineDraft(event.target.value)} placeholder="What should people remember about you?" maxLength={120}/></label>
+                    <label><span>What I do / job</span><input value={profileOccupationDraft} onChange={event => setProfileOccupationDraft(event.target.value)} placeholder="e.g. AI/ML Developer Intern" maxLength={140}/></label>
+                    <label><span>College / currently doing</span><input value={profileCollegeDraft} onChange={event => setProfileCollegeDraft(event.target.value)} placeholder="e.g. B.Tech CSE — building a new project" maxLength={180}/></label>
+                    <label><span>About me</span><textarea value={profileStoryDraft} onChange={event => setProfileStoryDraft(event.target.value)} placeholder="Tell the Harbour about yourself, your interests, projects or journey." rows={4} maxLength={600}/></label>
+                    <div className="community-profile-dashboard-editor-actions"><button type="button" className="community-profile-dashboard-save" onClick={() => void saveCommunityProfile()} disabled={profileSaving}>{profileSaving ? 'Saving…' : 'Save profile'}</button></div>
+                  </div>
+                </section>}
+
+                <div className="community-profile-dashboard-stats">
+                  <div><span>Posts</span><strong>{profilePosts.length}</strong></div><div><span>Questions</span><strong>{profilePosts.filter(post => post.postType === 'QUESTION').length}</strong></div><div><span>Answers</span><strong>{profileAnswerCount}</strong></div><div><span>Contributions</span><strong>{profilePosts.length + profileAnswerCount}</strong></div>
+                </div>
+
+                {profileTab === 'overview' && <div className="community-profile-dashboard-grid">
+                  <section className="community-profile-dashboard-panel"><div className="community-profile-dashboard-panel-heading"><div><span>ABOUT ME</span><h3>About {profileUserName}</h3></div></div><div className="community-profile-dashboard-about">
+                    <div><span>TAGLINE</span><strong>{profileData?.tagline || 'No tagline added yet.'}</strong></div><div><span>WORK</span><strong>{profileData?.occupation || 'No work details added yet.'}</strong></div><div><span>COLLEGE / CURRENTLY DOING</span><strong>{profileData?.collegeActivity || 'No college details added yet.'}</strong></div><div><span>ABOUT</span><strong>{profileData?.story || 'This member has not added an about section yet.'}</strong></div>
+                  </div></section>
+                  <section className="community-profile-dashboard-panel"><div className="community-profile-dashboard-panel-heading"><div><span>MY STORIES</span><h3>Stories</h3></div>{profileCanEdit && <button type="button" className="community-profile-dashboard-small-button" onClick={() => setProfileStoryComposerOpen(current => !current)}>+ Add</button>}</div>
+                    {profileCanEdit && profileStoryComposerOpen && <div className="community-profile-dashboard-story-composer"><textarea value={profileStoryDraft} onChange={event => setProfileStoryDraft(event.target.value)} placeholder="Share a project update, achievement or milestone." rows={4} maxLength={500}/><button type="button" className="community-profile-dashboard-save" onClick={() => void addCommunityProfileStory()} disabled={profileStorySaving}>{profileStorySaving ? 'Publishing…' : 'Publish story'}</button></div>}
+                    {profileStories.length === 0 ? <p className="community-profile-dashboard-empty">No stories yet.{profileCanEdit ? ' Add the first one.' : ''}</p> : <div className="community-profile-story-cards">{profileStories.map((story,index)=><article className="community-profile-story-card" key={story.id}><div className={`community-profile-story-card-art story-art-${index%4}`}><span>✦</span></div><div><strong>{story.content}</strong><small>{formatTime(story.createdAt)}</small></div></article>)}</div>}
+                  </section>
+                </div>}
+
+                {profileTab === 'posts' && <section className="community-profile-dashboard-panel community-profile-dashboard-full-panel"><div className="community-profile-dashboard-panel-heading"><div><span>POSTS</span><h3>All posts by {profileUserName}</h3></div><strong>{profilePosts.length}</strong></div>{profilePosts.length===0?<p className="community-profile-dashboard-empty">No posts yet.</p>:<div className="community-profile-dashboard-post-list">{profilePosts.map(post=><button type="button" className="community-profile-dashboard-post" key={post.id} onClick={()=>{setProfileUserId(null);requestAnimationFrame(()=>document.getElementById(`community-post-${post.id}`)?.scrollIntoView({behavior:'smooth',block:'center'}))}}><span className="community-profile-dashboard-post-type">{post.postType==='QUESTION'?'QUESTION':'POST'}</span><span className="community-profile-dashboard-post-info"><strong>{post.title}</strong><small>{post.replies} replies · {post.votes} votes · {post.views} views</small></span><span>→</span></button>)}</div>}</section>}
+
+                {profileTab === 'questions' && <section className="community-profile-dashboard-panel community-profile-dashboard-full-panel"><div className="community-profile-dashboard-panel-heading"><div><span>QUESTIONS</span><h3>Questions asked by {profileUserName}</h3></div><strong>{profilePosts.filter(post=>post.postType==='QUESTION').length}</strong></div>{profilePosts.filter(post=>post.postType==='QUESTION').length===0?<p className="community-profile-dashboard-empty">No questions yet.</p>:<div className="community-profile-dashboard-post-list">{profilePosts.filter(post=>post.postType==='QUESTION').map(post=><button type="button" className="community-profile-dashboard-post" key={post.id} onClick={()=>{setProfileUserId(null);requestAnimationFrame(()=>document.getElementById(`community-post-${post.id}`)?.scrollIntoView({behavior:'smooth',block:'center'}))}}><span className="community-profile-dashboard-post-type">QUESTION</span><span className="community-profile-dashboard-post-info"><strong>{post.title}</strong><small>{post.replies} replies · {post.votes} votes · {post.views} views</small></span><span>→</span></button>)}</div>}</section>}
+
+                {profileTab === 'answers' && <section className="community-profile-dashboard-panel community-profile-dashboard-full-panel"><div className="community-profile-dashboard-panel-heading"><div><span>ANSWERS</span><h3>Answers by {profileUserName}</h3></div><strong>{profileAnswerCount}</strong></div><p className="community-profile-dashboard-empty">{profileAnswerCount>0?`${profileUserName} has contributed ${profileAnswerCount} answer${profileAnswerCount===1?'':'s'} in the Harbour.`:'No answers yet.'}</p></section>}
+
+                {profileTab === 'activity' && <div className="community-profile-dashboard-grid"><section className="community-profile-dashboard-panel"><div className="community-profile-dashboard-panel-heading"><div><span>ACTIVITY</span><h3>Community activity</h3></div></div><div className="community-profile-dashboard-activity"><div><strong>{profilePosts.length}</strong><span>posts created</span></div><div><strong>{profileAnswerCount}</strong><span>answers contributed</span></div><div><strong>{profilePosts.reduce((sum,post)=>sum+post.votes,0)}</strong><span>post votes received</span></div><div><strong>{profilePosts.reduce((sum,post)=>sum+post.replies,0)}</strong><span>replies on posts</span></div></div></section><section className="community-profile-dashboard-panel"><div className="community-profile-dashboard-panel-heading"><div><span>STORIES</span><h3>Latest stories</h3></div></div>{profileStories.length===0?<p className="community-profile-dashboard-empty">No stories yet.</p>:<div className="community-profile-dashboard-story-list">{profileStories.slice(0,5).map(story=><article className="community-profile-dashboard-story" key={story.id}><div className="community-profile-dashboard-story-dot"/><div><strong>{story.content}</strong><small>{formatTime(story.createdAt)}</small></div></article>)}</div>}</section></div>}
+              </>}
+            </section>
+          </div>
+
+          {profileChatOpen && <div className="community-profile-chat" role="dialog" aria-label={`Chat with ${profileUserName}`}>
+            <header className="community-profile-chat-header"><div className="community-profile-chat-person"><div className="community-profile-chat-avatar">{profileAvatar?<img src={profileAvatar} alt=""/>:initialsFor(profileUserName)}</div><div><strong>{profileUserName}</strong><span>Personal chat</span></div></div><button type="button" onClick={()=>setProfileChatOpen(false)} aria-label="Close chat">×</button></header>
+            <div className="community-profile-chat-body">{profileChatLoading?<div className="community-profile-chat-empty">Opening chat…</div>:profileChatMessages.length===0?<div className="community-profile-chat-empty">No messages yet. Say hello.</div>:profileChatMessages.map(message=><div className={`community-profile-chat-message ${message.senderId===currentUserId?'mine':'theirs'}`} key={message.id}><span>{message.content}</span><small>{formatTime(message.createdAt)}</small></div>)}</div>
+            <form className="community-profile-chat-composer" onSubmit={sendProfileChatMessage}><input value={profileChatDraft} onChange={event=>setProfileChatDraft(event.target.value)} placeholder="Write a message…" maxLength={2000} disabled={profileChatLoading||profileChatSending}/><button type="submit" disabled={!profileChatDraft.trim()||profileChatLoading||profileChatSending}>{profileChatSending?'…':'➤'}</button></form>
+          </div>}
+        </div>
+      )}
+
+</main>
   )
 }
