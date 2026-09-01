@@ -814,22 +814,38 @@ const teachingGuide: Record<number, {
   steps: string[]
   code: string
   whatPythonDoes: string
-  exercise: string
-  answer: string
-  explanation: string
+  codeBreakdown?: { part: string; meaning: string }[]
+  sourceVsResult?: { source: string; result: string; explanation: string }
+  values?: { title: string; examples: { code: string; explanation: string }[] }
+  execution?: { title: string; code: string; walkthrough: string[] }
+  experiment?: { title: string; instructions: string; code: string; observation: string }
+  breakIt?: { title: string; code: string; prompt: string; explanation: string }
+  commonMistakes?: { code: string; problem: string; fix: string }[]
+  readCode?: { title: string; code: string; prompt: string; answer: string; explanation: string }
+  answer?: string
+  explanation?: string
+  nextIdea?: string
+  exercise: string | {
+    title: string
+    prompt: string
+    answer: string
+    explanation: string
+  }
   prediction: { question: string; options: string[]; correct: number; explanation: string }
   quiz: { question: string; options: string[]; correct: number; explanation: string }
-  playgrounds?: { title: string; goal: string; code: string; predict: string; change: string; notice: string }[]
+  playgrounds?: { title: string; goal: string; code: string; predict?: string; change?: string; notice?: string }[]
   exercises?: {
     title: string
     prompt: string
     hint: string
-    expected: string
-    starterCode: string
-    points: number
-    correctExplanation: string
-    incorrectExplanation: string
+    expected?: string
+    starterCode?: string
+    points?: number
+    correctExplanation?: string
+    incorrectExplanation?: string
   }[]
+  additionalExercises?: { title: string; prompt: string; hint: string; expected?: string }[]
+    
   quizzes?: { question: string; options: string[]; correct: number; explanation: string }[]
   examples?: {
     title: string
@@ -847,6 +863,7 @@ const teachingGuide: Record<number, {
     whatPythonDoes?: string
     tryIt?: string
   }[]
+  [key: string]: any
 }> = {
   1: {
     exercises: [
@@ -978,8 +995,8 @@ print("10" + "5")`,
       title: `Build the Harbor startup message`,
       prompt: `Write three Python statements that display SYSTEM CHECK, DOCK READY, and HARBOR ONLINE in exactly that order. Then explain why separate statements make the program easier to change.`,
       answer: `print("SYSTEM CHECK")
-print("DOCK READY")
-print("HARBOR ONLINE")`,
+    print("DOCK READY")
+    print("HARBOR ONLINE")`,
       explanation: `Each print statement is a separate instruction. Their order is explicit, and one message can be changed or moved without rewriting the others.`
     },
     readCode: {
@@ -1121,7 +1138,7 @@ print("SYSTEM READY")`,
     { title: "18 · Comments are for humans", code: "# The system is ready\nprint(\"READY\")", goal: "Add a comment explaining why the program is ready. Then change the code without changing the comment." },
     { title: "19 · Whitespace can affect readability", code: "first = 10\nsecond = 20\nprint(first + second)", goal: "Rename the values and format the code so another learner can understand it immediately." },
     { title: "20 · Combine the mental model", code: "name = \"Nova\"\nlevel = 3\nready = level >= 3\nprint(name)\nprint(ready)", goal: "Trace every line, predict the output, and explain where each value came from." }],
-    exercises: [
+    additionalExercises: [
       {
         title: '01 · Three-line status',
         prompt: 'Write three separate print statements that display STARTING, CHECKING, and READY in exactly that order.',
@@ -3778,14 +3795,14 @@ export default function Practice() {
       const passed =
         result?.success !== false &&
         result?.type !== 'error' &&
-        normalize(actualOutput) === normalize(exercise.expected)
+        normalize(actualOutput) === normalize(exercise.expected ?? '')
 
       setExerciseResults((current) => ({
         ...current,
         [`${selectedLessonNumber}-${exerciseIndex}`]: {
           status: passed ? 'correct' : 'incorrect',
           output: actualOutput,
-          earned: passed ? exercise.points : 0,
+          earned: passed ? (exercise.points ?? 5) : 0,
         },
       }))
 
@@ -5312,7 +5329,10 @@ print("42")`}
 
                 {(() => {
                   const lessonExercises = teachingGuide[selectedLessonNumber]?.exercises ?? []
-                  const totalPoints = lessonExercises.reduce((sum, item) => sum + item.points, 0)
+                  const totalPoints = lessonExercises.reduce(
+                    (sum, item) => sum + (item.points ?? 5),
+                    0
+                  )
                   const earnedPoints = lessonExercises.reduce(
                     (sum, item, index) =>
                       sum + (exerciseResults[`${selectedLessonNumber}-${index}`]?.earned ?? 0),
@@ -5411,7 +5431,7 @@ print("42")`}
                                 <button
                                   type="button"
                                   onClick={() => {
-                                    setCode(item.starterCode)
+                                    setCode(item.starterCode ?? '# Write your solution below\n')
                                     setConsoleOpen(true)
                                     setPanelFocus('none')
                                   }}
@@ -5586,11 +5606,11 @@ print("42")`}
 
                       <div style={{ display: 'grid', gap: 12, marginTop: 16 }}>
                         {lessonQuizzes.map((item, quizIndex) => (
-                          <QuizCard
-                            key={`${selectedLessonNumber}-${quizIndex}`}
-                            number={quizIndex + 1}
-                            data={item}
-                            result={quizResults[`${selectedLessonNumber}-${quizIndex}`]}
+  <QuizCard
+    key={`${selectedLessonNumber}-quiz-${quizIndex}`}
+    number={quizIndex + 1}
+    data={item}
+    result={quizResults[`${selectedLessonNumber}-${quizIndex}`]}
                             onGrade={(choice) => {
                               const correct = choice === item.correct
                               setQuizResults((current) => ({

@@ -187,6 +187,99 @@ function Metric({ icon, value }: { icon: string; value: string | number }) {
   )
 }
 
+
+type CommunityBadgeKind =
+  | 'top-contributor'
+  | 'helpful-answer'
+  | 'discussion-starter'
+  | 'bug-hunter'
+  | 'ship-builder'
+  | 'early-crew'
+
+const COMMUNITY_BADGE_DEFINITIONS: Record<CommunityBadgeKind, string> = {
+  'top-contributor': 'Top Contributor',
+  'helpful-answer': 'Helpful Answer',
+  'discussion-starter': 'Discussion Starter',
+  'bug-hunter': 'Bug Hunter',
+  'ship-builder': 'Ship Builder',
+  'early-crew': 'Early Crew',
+}
+
+function CommunityBadgeIcon({ kind }: { kind: CommunityBadgeKind }) {
+  if (kind === 'helpful-answer') {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="m5 12 4 4L19 6" />
+      </svg>
+    )
+  }
+
+  if (kind === 'discussion-starter') {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M5 5.5h14v10H10l-4.5 4v-4H5v-10Z" />
+        <path d="M9 9.5h6M9 12.5h4" />
+      </svg>
+    )
+  }
+
+  if (kind === 'bug-hunter') {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="12" r="4.5" />
+        <path d="M12 3.5v3M12 17.5v3M3.5 12h3M17.5 12h3M5.9 5.9 8 8M16 16l2.1 2.1M18.1 5.9 16 8M8 16l-2.1 2.1" />
+      </svg>
+    )
+  }
+
+  if (kind === 'ship-builder') {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 3 20 7.5 12 12 4 7.5 12 3Z" />
+        <path d="m4 12.5 8 4.5 8-4.5M4 17l8 4 8-4" />
+      </svg>
+    )
+  }
+
+  if (kind === 'early-crew') {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 3.5 14.2 9l5.8.4-4.5 3.7 1.4 5.7L12 15.7l-4.9 3.1 1.4-5.7L4 9.9 9.8 9 12 3.5Z" />
+      </svg>
+    )
+  }
+
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M12 3.5 14.4 9l5.6.5-4.2 3.7 1.2 5.5-5-2.9-5 2.9 1.2-5.5L4 9.5 9.6 9 12 3.5Z" />
+    </svg>
+  )
+}
+
+function CommunityBadge({ kind }: { kind: CommunityBadgeKind }) {
+  return (
+    <span
+      className="community-professional-badge"
+      title={COMMUNITY_BADGE_DEFINITIONS[kind]}
+      aria-label={COMMUNITY_BADGE_DEFINITIONS[kind]}
+    >
+      <CommunityBadgeIcon kind={kind} />
+    </span>
+  )
+}
+
+function communityBadgeForUser(
+  reputation: number,
+  acceptedAnswers: number,
+): CommunityBadgeKind | null {
+  if (reputation >= 1000) return 'top-contributor'
+  if (acceptedAnswers > 0) return 'helpful-answer'
+  if (reputation >= 250) return 'discussion-starter'
+  if (reputation >= 100) return 'ship-builder'
+  if (reputation > 0) return 'early-crew'
+  return null
+}
+
 export default function Community() {
   const [activeExplore, setActiveExplore] = useState('All Topics')
   const [showAllTopics, setShowAllTopics] = useState(false)
@@ -280,6 +373,7 @@ export default function Community() {
   const [openPostMenu, setOpenPostMenu] = useState<string | null>(null)
   const [sharePost, setSharePost] = useState<Post | null>(null)
   const [shareCopied, setShareCopied] = useState(false)
+  const [shareTarget, setShareTarget] = useState<'copy' | 'whatsapp' | 'x' | 'linkedin' | 'gmail' | 'outlook' | 'notepad' | null>(null)
   const [deletingPostId, setDeletingPostId] = useState<string | null>(null)
   const [rescueUpdatingPostId, setRescueUpdatingPostId] = useState<string | null>(null)
   const [pinUpdatingPostId, setPinUpdatingPostId] = useState<string | null>(null)
@@ -312,6 +406,7 @@ export default function Community() {
   const [notifications, setNotifications] = useState<CommunityNotification[]>([])
   const [notificationsOpen, setNotificationsOpen] = useState(false)
   const [notificationsLoading, setNotificationsLoading] = useState(false)
+  const [notificationActivityFilter, setNotificationActivityFilter] = useState<'all' | 'mentions' | 'replies' | 'upvotes'>('all')
   const [notificationPreferencesOpen, setNotificationPreferencesOpen] = useState(false)
   const [notificationPreferences, setNotificationPreferences] = useState({
     enabled: true,
@@ -882,6 +977,28 @@ export default function Community() {
     )
   }
 
+  const activityNotifications = useMemo(() => {
+    if (notificationActivityFilter === 'all') return notifications
+
+    return notifications.filter(notification => {
+      const type = notification.type.toUpperCase()
+
+      if (notificationActivityFilter === 'mentions') {
+        return type.includes('MENTION')
+      }
+
+      if (notificationActivityFilter === 'replies') {
+        return type.includes('REPLY') || type.includes('COMMENT') || type.includes('FOLLOWED_QUESTION_ACTIVITY')
+      }
+
+      if (notificationActivityFilter === 'upvotes') {
+        return type.includes('UPVOTE') || type.includes('VOTE') || type.includes('REACTION') || type.includes('LIKE')
+      }
+
+      return true
+    })
+  }, [notifications, notificationActivityFilter])
+
   const markNotificationRead = async (notificationId: string) => {
     if (!currentUserId) return
 
@@ -1385,8 +1502,8 @@ useEffect(() => {
     } else if (activeExplore === 'Latest') {
       result.sort(
         (a, b) =>
-          new Date(b.createdAt).getTime() -
-          new Date(a.createdAt).getTime(),
+          new Date(b.time).getTime() -
+          new Date(a.time).getTime(),
       )
     } else if (activeExplore === 'Most Upvoted') {
       result.sort((a, b) => b.votes - a.votes)
@@ -1459,8 +1576,8 @@ useEffect(() => {
     if (searchSort === 'newest') {
       result.sort(
         (a, b) =>
-          new Date(b.createdAt).getTime() -
-          new Date(a.createdAt).getTime(),
+          new Date(b.time).getTime() -
+          new Date(a.time).getTime(),
       )
     } else if (searchSort === 'active') {
       result.sort(
@@ -1489,7 +1606,7 @@ useEffect(() => {
         return b.replies - a.replies
       }
 
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      return new Date(b.time).getTime() - new Date(a.time).getTime()
     })
   }, [
     activeExplore,
@@ -1633,24 +1750,11 @@ useEffect(() => {
     setBookmarked(current => [...current, id])
   }
 
-  const openSharePost = async (post: Post) => {
-    setSharePost(post)
-    setShareCopied(false)
-
-    if (typeof navigator !== 'undefined' && navigator.share) {
-      try {
-        await navigator.share({
-          title: post.title,
-          text: post.body ? `${post.title}\n\n${post.body}` : post.title,
-          url: `${window.location.origin}/community?post=${encodeURIComponent(post.id)}`,
-        })
-        setSharePost(null)
-      } catch (error) {
-        // The user may have cancelled the native share sheet; keep the share dialog available.
-        if (error instanceof DOMException && error.name === 'AbortError') return
+      const openSharePost = (post: Post) => {
+        setSharePost(post)
+        setShareCopied(false)
+        setShareTarget(null)
       }
-    }
-  }
 
   const copyPostLink = async () => {
     if (!sharePost) return
@@ -1661,6 +1765,46 @@ useEffect(() => {
     } catch {
       setErrorMessage('We could not copy the post link. Please try again.')
     }
+  }
+
+  const handleCopyShareLink = async () => {
+    if (!sharePost) return
+    const url = `${window.location.origin}/community?post=${encodeURIComponent(sharePost.id)}`
+    try {
+      await navigator.clipboard.writeText(url)
+      setShareCopied(true)
+      setShareTarget('copy')
+    } catch {
+      setShareCopied(false)
+      setErrorMessage('We could not copy the post link. Please try again.')
+    }
+  }
+
+  const openShareTarget = (target: Exclude<typeof shareTarget, 'copy' | null>) => {
+    if (!sharePost) return
+
+    const url = `${window.location.origin}/community?post=${encodeURIComponent(sharePost.id)}`
+    const title = sharePost.title || 'Check out this post on HackersHarbor'
+    const message = `${title} — ${url}`
+
+    if (target === 'notepad') {
+      navigator.clipboard?.writeText(message)
+      setShareTarget('notepad')
+      setShareCopied(true)
+      return
+    }
+
+    const targetUrls: Record<Exclude<typeof shareTarget, 'copy' | null>, string> = {
+      whatsapp: `https://wa.me/?text=${encodeURIComponent(message)}`,
+      x: `https://x.com/intent/post?text=${encodeURIComponent(title)}&url=${encodeURIComponent(url)}`,
+      linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`,
+      gmail: `https://mail.google.com/mail/?view=cm&fs=1&su=${encodeURIComponent(title)}&body=${encodeURIComponent(message)}`,
+      outlook: `https://outlook.live.com/mail/0/deeplink/compose?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(message)}`,
+      notepad: '',
+    }
+
+    window.open(targetUrls[target], '_blank', 'noopener,noreferrer')
+    setShareTarget(target)
   }
 
   const toggleRescue = async (id: string) => {
@@ -3073,6 +3217,51 @@ useEffect(() => {
           cursor: pointer;
         }
 
+        .notification-activity-tabs {
+          display: flex;
+          gap: 4px;
+          padding: 8px 12px 7px;
+          border-bottom: 1px solid #edf0f4;
+          overflow-x: auto;
+        }
+
+        .notification-activity-tab {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          border: 0;
+          border-radius: 999px;
+          background: transparent;
+          color: #68748a;
+          padding: 5px 8px;
+          font-size: 9px;
+          font-weight: 650;
+          cursor: pointer;
+          white-space: nowrap;
+        }
+
+        .notification-activity-tab span {
+          min-width: 14px;
+          height: 14px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 999px;
+          background: #eef1f5;
+          color: #68748a;
+          font-size: 8px;
+        }
+
+        .notification-activity-tab:hover {
+          color: #1f2937;
+          background: #f6f7f9;
+        }
+
+        .notification-activity-tab.active {
+          background: #eef1f5;
+          color: #1f2937;
+        }
+
         .notification-list {
           max-height: 360px;
           overflow-y: auto;
@@ -3320,7 +3509,8 @@ useEffect(() => {
         }
 
         .content {
-          max-width: 1120px;
+          max-width: 1260px;
+          width: calc(100% - 32px);
           margin: 0 auto;
           padding: 20px 0 34px;
         }
@@ -3595,8 +3785,8 @@ useEffect(() => {
 
         .layout {
           display: grid;
-          grid-template-columns: 198px minmax(0, 1fr) 310px;
-          gap: 16px;
+          grid-template-columns: 215px minmax(0, 1fr) 320px;
+          gap: 18px;
           align-items: start;
         }
 
@@ -5918,6 +6108,29 @@ useEffect(() => {
           font-weight: 700;
         }
 
+        .community-professional-badge {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 15px;
+          height: 15px;
+          margin-left: 2px;
+          color: #3f4b5f;
+          flex: 0 0 auto;
+          vertical-align: middle;
+          cursor: help;
+        }
+
+        .community-professional-badge svg {
+          width: 13px;
+          height: 13px;
+          fill: none;
+          stroke: currentColor;
+          stroke-width: 1.65;
+          stroke-linecap: round;
+          stroke-linejoin: round;
+        }
+
         .author-reputation {
           display: inline-flex;
           align-items: center;
@@ -6257,6 +6470,91 @@ useEffect(() => {
           font-size: 9px;
         }
 
+        .saved-posts-header {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          margin-bottom: 10px;
+          padding: 12px 14px;
+          border: 1px solid #e5e8ee;
+          border-radius: 10px;
+          background: #fff;
+        }
+
+        .saved-posts-header-icon,
+        .saved-posts-empty-icon {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          flex: 0 0 auto;
+          color: #1f2937;
+        }
+
+        .saved-posts-header-icon {
+          width: 30px;
+          height: 30px;
+          border-radius: 8px;
+          background: #f1f3f6;
+        }
+
+        .saved-posts-header-icon svg,
+        .saved-posts-empty-icon svg {
+          width: 17px;
+          height: 17px;
+          fill: none;
+          stroke: currentColor;
+          stroke-width: 1.7;
+          stroke-linecap: round;
+          stroke-linejoin: round;
+        }
+
+        .saved-posts-header-copy {
+          min-width: 0;
+          flex: 1;
+        }
+
+        .saved-posts-header-copy h2 {
+          margin: 0;
+          color: #1f2937;
+          font-size: 13px;
+          line-height: 1.25;
+        }
+
+        .saved-posts-header-copy p {
+          margin: 2px 0 0;
+          color: #68748a;
+          font-size: 9px;
+          line-height: 1.4;
+        }
+
+        .saved-posts-header-clear {
+          border: 0;
+          background: transparent;
+          color: #68748a;
+          padding: 5px 2px;
+          font-size: 9px;
+          font-weight: 650;
+          cursor: pointer;
+          white-space: nowrap;
+        }
+
+        .saved-posts-header-clear:hover {
+          color: #1f2937;
+          text-decoration: underline;
+        }
+
+        .saved-posts-empty .saved-posts-empty-icon {
+          width: 42px;
+          height: 42px;
+          margin: 0 auto 5px;
+          border-radius: 50%;
+          background: #f1f3f6;
+        }
+
+        .saved-posts-empty p {
+          max-width: 360px;
+        }
+
         .empty-community {
           min-height: 310px;
           border: 1px dashed #d7dee9;
@@ -6581,6 +6879,7 @@ useEffect(() => {
 
         @media (max-width: 1100px) {
           .content {
+            width: auto;
             padding-left: 18px;
             padding-right: 18px;
           }
@@ -6822,6 +7121,173 @@ useEffect(() => {
       .question-tags-builder-list button { border:0; border-radius:999px; background:#edf3fb; color:#315d91; padding:5px 9px; font-size:12px; cursor:pointer; }
       .tag { cursor:pointer; }
       .pinned { display:inline-flex; align-items:center; gap:5px; }
+        .share-post-backdrop {
+          position: fixed;
+          inset: 0;
+          z-index: 2000;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 16px;
+          background: rgba(15, 23, 42, .24);
+          backdrop-filter: blur(3px);
+        }
+
+        .share-post-modal {
+          width: min(650px, calc(100vw - 32px));
+          padding: 16px 18px 14px;
+          border: 1px solid #e5e7eb;
+          border-radius: 15px;
+          background: #fff;
+          box-shadow: 0 20px 60px rgba(15, 23, 42, .18);
+          animation: sharePopupIn .16s ease-out;
+        }
+
+        @keyframes sharePopupIn {
+          from { opacity: 0; transform: translateY(5px) scale(.99); }
+          to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .share-post-modal-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 8px;
+        }
+
+        .share-post-modal-kicker {
+          display: block;
+          margin-bottom: 2px;
+          color: #98a2b3;
+          font-size: 8px;
+          font-weight: 750;
+          letter-spacing: .12em;
+        }
+
+        .share-post-modal-header h2 {
+          margin: 0;
+          color: #182230;
+          font-size: 15px;
+          font-weight: 700;
+        }
+
+        .share-post-close {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 28px;
+          height: 28px;
+          border: 0;
+          border-radius: 7px;
+          background: #f5f6f8;
+          color: #667085;
+          font-size: 19px;
+          line-height: 1;
+          cursor: pointer;
+        }
+
+        .share-post-close:hover { background: #eceef2; color: #344054; }
+
+        .share-post-options {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 4px;
+          width: 100%;
+          padding: 5px 0 1px;
+          overflow-x: auto;
+          scrollbar-width: none;
+        }
+
+        .share-post-options::-webkit-scrollbar { display: none; }
+
+        .share-post-option {
+          flex: 1 0 72px;
+          min-width: 72px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 5px;
+          padding: 5px 2px 3px;
+          border: 0;
+          border-radius: 9px;
+          background: transparent;
+          color: #475467;
+          font-size: 9px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: background .14s ease, transform .14s ease;
+        }
+
+        .share-post-option:hover { background: #f8fafc; transform: translateY(-1px); }
+
+        .share-post-option-icon {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 36px;
+          height: 36px;
+          border-radius: 10px;
+          font-size: 15px;
+          font-weight: 750;
+          line-height: 1;
+        }
+
+        .share-brand-svg {
+          width: 24px;
+          height: 24px;
+          display: block;
+          flex: 0 0 auto;
+          shape-rendering: geometricPrecision;
+        }
+
+        .share-post-option-icon > svg {
+          width: 21px;
+          height: 21px;
+          display: block;
+        }
+
+        .share-icon-copy > svg {
+          fill: none;
+          stroke: currentColor;
+          stroke-width: 1.8;
+          stroke-linecap: round;
+          stroke-linejoin: round;
+        }
+
+
+
+        .share-icon-copy { background: #f2f4f7; color: #475467; }
+        .share-icon-whatsapp { background: #e9f8ef; color: #16a05d; }
+        .share-icon-x { background: #111827; color: #fff; }
+        .share-icon-linkedin { background: #e8f1fb; color: #0a66c2; }
+        .share-icon-gmail { background: #fceeee; color: #d93025; }
+        .share-icon-outlook { background: #eaf2ff; color: #1672d8; }
+        .share-icon-notepad { background: #f2f4f7; color: #667085; }
+
+        .share-post-option:focus-visible,
+        .share-post-close:focus-visible {
+          outline: 2px solid #98a2b3;
+          outline-offset: 2px;
+        }
+
+        .share-post-copied {
+          margin-top: 8px;
+          padding: 6px 9px;
+          border-radius: 7px;
+          background: #f0fdf4;
+          color: #15803d;
+          font-size: 9px;
+          font-weight: 600;
+          text-align: center;
+        }
+
+        @media (max-width: 620px) {
+          .share-post-backdrop { padding: 10px; }
+          .share-post-modal { width: calc(100vw - 20px); padding: 14px 10px 12px; }
+          .share-post-options { justify-content: flex-start; }
+        }
+
       `}</style>
 
       <header className="topbar">
@@ -6935,9 +7401,42 @@ useEffect(() => {
                   </div>
                 )}
 
-                {notifications.length ? (
+                <div className="notification-activity-tabs" role="tablist" aria-label="Activity filters">
+                  {([
+                    ['all', 'All'],
+                    ['mentions', 'Mentions'],
+                    ['replies', 'Replies'],
+                    ['upvotes', 'Upvotes'],
+                  ] as const).map(([key, label]) => {
+                    const count = key === 'all'
+                      ? notifications.length
+                      : notifications.filter(notification => {
+                          const type = notification.type.toUpperCase()
+                          if (key === 'mentions') return type.includes('MENTION')
+                          if (key === 'replies') return type.includes('REPLY') || type.includes('COMMENT') || type.includes('FOLLOWED_QUESTION_ACTIVITY')
+                          if (key === 'upvotes') return type.includes('UPVOTE') || type.includes('VOTE') || type.includes('REACTION') || type.includes('LIKE')
+                          return true
+                        }).length
+
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        role="tab"
+                        aria-selected={notificationActivityFilter === key}
+                        className={`notification-activity-tab ${notificationActivityFilter === key ? 'active' : ''}`}
+                        onClick={() => setNotificationActivityFilter(key)}
+                      >
+                        {label}
+                        {count > 0 && <span>{count}</span>}
+                      </button>
+                    )
+                  })}
+                </div>
+
+                {activityNotifications.length ? (
                   <div className="notification-list">
-                    {notifications.map(notification => (
+                    {activityNotifications.map(notification => (
                       <div
                         className={`notification-item ${notification.isRead ? '' : 'unread'} ${notification.postId ? 'clickable' : ''}`}
                         key={notification.id}
@@ -6984,8 +7483,16 @@ useEffect(() => {
                 ) : (
                   <div className="notification-empty">
                     <div className="notification-empty-icon">✓</div>
-                    <strong>You're all caught up</strong>
-                    <span>New community activity will appear here.</span>
+                    <strong>
+                      {notificationActivityFilter === 'all'
+                        ? "You're all caught up"
+                        : `No ${notificationActivityFilter} activity yet`}
+                    </strong>
+                    <span>
+                      {notificationActivityFilter === 'all'
+                        ? 'New community activity will appear here.'
+                        : 'Try another activity filter to see more.'}
+                    </span>
                   </div>
                 )}
               </div>
@@ -7023,7 +7530,13 @@ useEffect(() => {
               key={name}
               type="button"
               className={`harbour-nav-item ${harbourArea === name ? 'active' : ''}`}
-              onClick={() => setHarbourArea(name)}
+              onClick={() => {
+                if (name === 'Channels') {
+                  window.location.href = '/community/channels'
+                  return
+                }
+                setHarbourArea(name)
+              }}
               aria-current={harbourArea === name ? 'page' : undefined}
             >
               <span className="harbour-nav-icon">{icon}</span>
@@ -7370,6 +7883,31 @@ useEffect(() => {
               <div className="sponsor-placeholder-label">Sponsored space</div>
             </section>
 
+            {activeExplore === 'Saved' && !loading && (
+              <section className="saved-posts-header" aria-label="Saved posts">
+                <div className="saved-posts-header-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M6 4.5A1.5 1.5 0 0 1 7.5 3h9A1.5 1.5 0 0 1 18 4.5V21l-6-3.5L6 21V4.5Z" />
+                  </svg>
+                </div>
+                <div className="saved-posts-header-copy">
+                  <h2>Saved Posts</h2>
+                  <p>
+                    {bookmarked.length === 0
+                      ? 'Posts you save will appear here.'
+                      : `${bookmarked.length} ${bookmarked.length === 1 ? 'post' : 'posts'} saved for later.`}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="saved-posts-header-clear"
+                  onClick={() => setActiveExplore('All Topics')}
+                >
+                  Back to feed
+                </button>
+              </section>
+            )}
+
             {loading ? (
               <section className="feed-loading">Loading the Harbour…</section>
             ) : filteredPosts.length > 0 ? (
@@ -7401,9 +7939,21 @@ useEffect(() => {
                       {post.author}
                     </button>
                     {reputationScoreFor(post.authorId) > 0 && (
-                      <span className="author-reputation" title="Community reputation based on contributions">
-                        Rep {reputationScoreFor(post.authorId)}
-                      </span>
+                      <>
+                        <span className="author-reputation" title="Community reputation based on contributions">
+                          Rep {reputationScoreFor(post.authorId)}
+                        </span>
+                        {(() => {
+                          const acceptedAnswers = reputationAnswers.filter(
+                            answer => answer.authorId === post.authorId && answer.isAccepted,
+                          ).length
+                          const badge = communityBadgeForUser(
+                            reputationScoreFor(post.authorId),
+                            acceptedAnswers,
+                          )
+                          return badge ? <CommunityBadge kind={badge} /> : null
+                        })()}
+                      </>
                     )}
                     <span className="dot">•</span>
                     <span className="time">{post.time}</span>
@@ -7898,6 +8448,23 @@ useEffect(() => {
 
                 </Fragment>
               ))
+            ) : activeExplore === 'Saved' ? (
+              <section className="empty-community saved-posts-empty">
+                <div className="saved-posts-empty-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M6 4.5A1.5 1.5 0 0 1 7.5 3h9A1.5 1.5 0 0 1 18 4.5V21l-6-3.5L6 21V4.5Z" />
+                  </svg>
+                </div>
+                <h2>No saved posts yet.</h2>
+                <p>Save useful questions, discussions, and answers to find them here later.</p>
+                <button
+                  type="button"
+                  className="ask empty-ask"
+                  onClick={() => setActiveExplore('All Topics')}
+                >
+                  Explore the Community
+                </button>
+              </section>
             ) : (
               <section className="empty-community">
                 <div className="empty-icon">⚓</div>
@@ -8247,20 +8814,36 @@ useEffect(() => {
           <div className="share-post-modal" role="dialog" aria-modal="true" aria-labelledby="share-post-title" onClick={event => event.stopPropagation()}>
             <div className="share-post-modal-header">
               <div>
-                <span>SHARE POST</span>
-                <h2 id="share-post-title">Share this post</h2>
+                <span className="share-post-modal-kicker">SHARE</span>
+                <h2 id="share-post-title">Share post</h2>
               </div>
-              <button type="button" onClick={() => setSharePost(null)} aria-label="Close share dialog">×</button>
+              <button type="button" className="share-post-close" onClick={() => setSharePost(null)} aria-label="Close share dialog">×</button>
             </div>
-            <div className="share-post-preview">
-              <strong>{sharePost.title}</strong>
-              {sharePost.body && <p>{sharePost.body.length > 180 ? `${sharePost.body.slice(0, 180).trim()}…` : sharePost.body}</p>}
+            <div className="share-post-options" aria-label="Share options">
+              <button type="button" className="share-post-option" onClick={() => void handleCopyShareLink()} aria-label="Copy post link">
+                <span className="share-post-option-icon share-icon-copy" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 8h8a3 3 0 0 1 3 3v6a3 3 0 0 1-3 3H11a3 3 0 0 1-3-3v-2"/><path d="M15 16H7a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3h6a3 3 0 0 1 3 3v1"/></svg></span>
+                <span>{shareCopied ? 'Copied' : 'Copy link'}</span>
+              </button>
+              <button type="button" className="share-post-option" onClick={() => openShareTarget('whatsapp')} aria-label="Share on WhatsApp">
+                <span className="share-post-option-icon share-icon-whatsapp" aria-hidden="true"><svg className="share-brand-svg" viewBox="0 0 24 24" role="img" aria-label="WhatsApp"><path fill="#25D366" d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg></span><span>WhatsApp</span>
+              </button>
+              <button type="button" className="share-post-option" onClick={() => openShareTarget('x')} aria-label="Share on X">
+                <span className="share-post-option-icon share-icon-x" aria-hidden="true"><svg className="share-brand-svg" viewBox="0 0 24 24" role="img" aria-label="X"><rect width="24" height="24" rx="6" fill="#050505"/><path fill="#fff" d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.64 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932 6.064-6.932Zm-1.293 19.53h2.039L6.486 3.24H4.298l13.31 17.443Z"/></svg></span><span>X</span>
+              </button>
+              <button type="button" className="share-post-option" onClick={() => openShareTarget('linkedin')} aria-label="Share on LinkedIn">
+                <span className="share-post-option-icon share-icon-linkedin" aria-hidden="true"><svg className="share-brand-svg" viewBox="0 0 24 24" role="img" aria-label="LinkedIn"><rect width="24" height="24" rx="4" fill="#0A66C2"/><path fill="#fff" d="M6.94 8.5A2.06 2.06 0 1 0 6.94 4.38a2.06 2.06 0 0 0 0 4.12ZM5.21 9.94h3.46V20H5.21V9.94Zm5.63 0h3.32v1.38h.05c.46-.87 1.59-1.78 3.27-1.78 3.5 0 4.15 2.3 4.15 5.3V20h-3.46v-4.57c0-1.09-.02-2.5-1.52-2.5-1.52 0-1.75 1.19-1.75 2.42V20h-3.46V9.94Z"/></svg></span><span>LinkedIn</span>
+              </button>
+              <button type="button" className="share-post-option" onClick={() => openShareTarget('gmail')} aria-label="Share with Gmail">
+                <span className="share-post-option-icon share-icon-gmail" aria-hidden="true"><svg className="share-brand-svg" viewBox="0 0 24 24" role="img" aria-label="Gmail"><path fill="#EA4335" d="M2 5.5A2.5 2.5 0 0 1 4.5 3H6l6 4.5L18 3h1.5A2.5 2.5 0 0 1 22 5.5v13A2.5 2.5 0 0 1 19.5 21H18V9.5L12 14 6 9.5V21H4.5A2.5 2.5 0 0 1 2 18.5v-13Z"/><path fill="#34A853" d="M2 5.5A2.5 2.5 0 0 1 4.5 3H6v18H4.5A2.5 2.5 0 0 1 2 18.5v-13Z"/><path fill="#4285F4" d="M18 3h1.5A2.5 2.5 0 0 1 22 5.5v13a2.5 2.5 0 0 1-2.5 2.5H18V9.5l-6 4.5V7.5L18 3Z"/><path fill="#FBBC04" d="M12 7.5 18 3h1.5L12 9.5 4.5 3H6l6 4.5Z"/></svg></span><span>Gmail</span>
+              </button>
+              <button type="button" className="share-post-option" onClick={() => openShareTarget('outlook')} aria-label="Share with Outlook">
+                <span className="share-post-option-icon share-icon-outlook" aria-hidden="true"><svg className="share-brand-svg" viewBox="0 0 24 24" role="img" aria-label="Outlook"><path fill="#0078D4" d="M8 2.5h11.5A2.5 2.5 0 0 1 22 5v14a2.5 2.5 0 0 1-2.5 2.5H8V2.5Z"/><path fill="#106EBE" d="M2 6h10.5A2.5 2.5 0 0 1 15 8.5v7A2.5 2.5 0 0 1 12.5 18H2V6Z"/><path fill="#fff" d="M5.05 8.2h2.1c2.45 0 3.75 1.38 3.75 3.8 0 2.43-1.3 3.8-3.75 3.8h-2.1V8.2Zm2.02 5.9c1.14 0 1.7-.69 1.7-2.1 0-1.4-.56-2.1-1.7-2.1h-.32v4.2h.32Z"/><path fill="#fff" d="m13 7 6 4.2v1.6L13 17V7Z"/></svg></span><span>Outlook</span>
+              </button>
+              <button type="button" className="share-post-option" onClick={() => openShareTarget('notepad')} aria-label="Copy post text for Notepad">
+                <span className="share-post-option-icon share-icon-notepad" aria-hidden="true"><svg className="share-brand-svg" viewBox="0 0 24 24" role="img" aria-label="Notepad"><rect x="5" y="2" width="14" height="20" rx="2.2" fill="#fff" stroke="#64748B" stroke-width="1.2"/><path fill="#0EA5E9" d="M5 4.2A2.2 2.2 0 0 1 7.2 2h9.6A2.2 2.2 0 0 1 19 4.2V6H5V4.2Z"/><path stroke="#64748B" stroke-width="1.25" stroke-linecap="round" d="M8 9.5h8M8 12.5h8M8 15.5h6M8 18.5h4"/></svg></span><span>Notepad</span>
+              </button>
             </div>
-            <button type="button" className="share-post-copy" onClick={() => void copyPostLink()}>
-              <span>{shareCopied ? '✓ Link copied' : 'Copy post link'}</span>
-              <span>{shareCopied ? 'Copied' : 'Copy'}</span>
-            </button>
-            <div className="share-post-hint">Anyone with the link can open this Community post.</div>
+            {shareCopied && <div className="share-post-copied" role="status">Link copied to clipboard</div>}
           </div>
         </div>
       )}

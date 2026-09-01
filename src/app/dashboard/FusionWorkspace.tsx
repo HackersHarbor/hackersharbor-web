@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import {
   KeyboardEvent,
@@ -70,7 +70,7 @@ function Panel({
         borderRadius: 12,
         overflow: 'hidden',
         boxShadow: darkMode
-'0 12px 32px rgba(0,0,0,.18)'
+? '0 12px 32px rgba(0,0,0,.18)'
           : '0 10px 30px rgba(15,23,42,.05)',
       }}
     >
@@ -179,8 +179,8 @@ export function FusionWorkspace({
     [cells],
   )
 
-  const latestTable = tableCells[tableCells.length - 1]  null
-  const table = latestTable?.output?.table  null
+  const latestTable = tableCells[tableCells.length - 1] ?? null
+  const table = latestTable?.output?.table ?? null
 
   const numericStats = useMemo(() => {
     if (!table) return []
@@ -197,7 +197,7 @@ export function FusionWorkspace({
         const mean = values.reduce((sum, value) => sum + value, 0) / values.length
         const median =
           sorted.length % 2
-sorted[Math.floor(sorted.length / 2)]
+            ? sorted[Math.floor(sorted.length / 2)]
             : (sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2
         const variance =
           values.reduce((sum, value) => sum + (value - mean) ** 2, 0) / values.length
@@ -225,7 +225,7 @@ sorted[Math.floor(sorted.length / 2)]
 
   const formatNumber = (value: number) =>
     Number.isInteger(value)
-value.toLocaleString()
+    ? value.toLocaleString()
       : value.toLocaleString(undefined, { maximumFractionDigits: 3 })
 
   const modelRecommendation = useMemo(() => {
@@ -345,7 +345,7 @@ else:
         print("Model:", ${JSON.stringify(model)})
         print("Rows:", len(ml))
         print("MAE:", round(mean_absolute_error(y_test, predictions), 4))
-        print("R²:", round(r2_score(y_test, predictions), 4))
+        print("RÂ²:", round(r2_score(y_test, predictions), 4))
         print("Feature importance:")
         if hasattr(estimator, "feature_importances_"):
             print(dict(sorted(
@@ -482,9 +482,7 @@ else:
         border: `1px solid ${surface === value ? colors.blue : colors.border}`,
         borderRadius: 7,
         padding: '6px 9px',
-        background: surface === value
-darkMode ? '#10233D' : '#EFF6FF'
-          : colors.card,
+        background: surface === value ? (darkMode ? '#10233D' : '#EFF6FF') : colors.card,
         color: surface === value ? colors.blue : colors.secondaryText,
         fontSize: 9,
         fontWeight: 700,
@@ -511,7 +509,7 @@ darkMode ? '#10233D' : '#EFF6FF'
           borderRadius: 14,
           padding: 14,
           background: darkMode
-'linear-gradient(135deg,#0B1627,#0D1520)'
+            ? 'linear-gradient(135deg,#0B1627,#0D1520)'
             : 'linear-gradient(135deg,#F5F9FF,#FFFFFF)',
         }}
       >
@@ -605,8 +603,7 @@ darkMode ? '#10233D' : '#EFF6FF'
               darkMode={darkMode}
             >
               <div style={{ maxHeight: 360, overflow: 'auto' }}>
-                {pythonCells.length
-pythonCells.map(editor)
+                {pythonCells.length ? pythonCells.map(editor)
                   : <div style={{ fontSize: 10, color: colors.mutedText }}>No Python cells yet.</div>}
               </div>
             </Panel>
@@ -618,8 +615,7 @@ pythonCells.map(editor)
               darkMode={darkMode}
             >
               <div style={{ maxHeight: 360, overflow: 'auto' }}>
-                {sqlCells.length
-sqlCells.map(editor)
+                {sqlCells.length ? sqlCells.map(editor)
                   : <div style={{ fontSize: 10, color: colors.mutedText }}>No SQL cells yet.</div>}
               </div>
             </Panel>
@@ -677,7 +673,7 @@ sqlCells.map(editor)
                     columns={table.columns}
                     rows={table.rows}
                     darkMode={darkMode}
-                    chartState={chartStates[latestTable!.id]  null}
+                    chartState={chartStates[latestTable!.id] ?? null}
                     onChartStateChange={(state) =>
                       onChartStateChange(latestTable!.id, state)
                     }
@@ -804,8 +800,7 @@ sqlCells.map(editor)
               darkMode={darkMode}
             >
               <div style={{ maxHeight: 390, overflow: 'auto' }}>
-                {pythonCells.length
-pythonCells.map(editor)
+                {pythonCells.length ? pythonCells.map(editor)
                   : <div style={{ fontSize: 10, color: colors.mutedText }}>No Python cells yet.</div>}
               </div>
             </Panel>
@@ -817,8 +812,7 @@ pythonCells.map(editor)
               darkMode={darkMode}
             >
               <div style={{ maxHeight: 390, overflow: 'auto' }}>
-                {sqlCells.length
-sqlCells.map(editor)
+                {sqlCells.length ? sqlCells.map(editor)
                   : <div style={{ fontSize: 10, color: colors.mutedText }}>No SQL cells yet.</div>}
               </div>
             </Panel>
@@ -858,7 +852,7 @@ sqlCells.map(editor)
                   columns={table.columns}
                   rows={table.rows}
                   darkMode={darkMode}
-                  chartState={chartStates[latestTable!.id]  null}
+                  chartState={chartStates[latestTable!.id] ?? null}
                   onChartStateChange={(state) => onChartStateChange(latestTable!.id, state)}
                   exportFilename={`hackersharbor-fusion-${latestTable!.id}`}
                   onPointClick={(column, value) =>
@@ -1170,3 +1164,6 @@ sqlCells.map(editor)
     </div>
   )
 }
+
+
+

@@ -4205,8 +4205,6 @@ export default function Dock() {
               dashboardPins={dashboardPins}
               onUpdateCode={updateCode}
               onRunCell={runCell}
-              onRunAll={runAll}
-              onRunPythonCode={executePythonCode}
               onChartStateChange={(cellId, state) => {
                 setChartStates((current) => {
                   const previous = current[cellId]
@@ -4239,7 +4237,6 @@ export default function Dock() {
               onDashboardChartStateChange={updateDashboardChartState}
               onOpenAnalysis={openSavedAnalysis}
               onDuplicateAnalysis={duplicateSavedAnalysis}
-              onExit={() => setFusionMode(false)}
             />
           ) : null}
 

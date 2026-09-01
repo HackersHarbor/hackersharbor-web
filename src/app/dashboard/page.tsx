@@ -1440,36 +1440,37 @@ export default function Dashboard() {
             <div className="section-grid">
               <div className="left-stack">
                 <section className="stats">
-                  {[
-                    [
-                      'Day Streak',
-                      completedStreakDays > 0 ? completedStreakDays : '',
-                      'days',
-                      '#F59E0B',
-                      completedStreakDays > 0 ? 'Keep it going' : '',
-                    ],
-                    [
-                      'Problems Solved',
-                      problemsSolved > 0 ? problemsSolved.toLocaleString() : '',
-                      '',
-                      '#20D3AD',
-                      '',
-                    ],
-                    [
-                      'Harbor XP',
-                      harborXp > 0 ? harborXp.toLocaleString() : '',
-                      '',
-                      '#4D8DFF',
-                      '',
-                    ],
-                    [
-                      'Certificates',
-                      certificates > 0 ? certificates.toLocaleString() : '',
-                      '',
-                      '#9B72FF',
-                      '',
-                    ],
-                  ].map(([label, value, suffix, color, change]) => (
+                {([
+  [
+    'Day Streak',
+    completedStreakDays > 0 ? completedStreakDays : '',
+    'days',
+    '#F59E0B',
+    completedStreakDays > 0 ? 'Keep it going' : '',
+  ],
+  [
+    'Problems Solved',
+    problemsSolved > 0 ? problemsSolved.toLocaleString() : '',
+    '',
+    '#20D3AD',
+    '',
+  ],
+  [
+    'Harbor XP',
+    harborXp > 0 ? harborXp.toLocaleString() : '',
+    '',
+    '#4D8DFF',
+    '',
+  ],
+  [
+    'Certificates',
+    certificates > 0 ? certificates.toLocaleString() : '',
+    '',
+    '#9B72FF',
+    '',
+  ],
+] as [string, string | number, string, string, string][]).map(
+  ([label, value, suffix, color, change]) => (
                     <div className="stat" key={label as string}>
                       <div className="stat-top" />
                       <div className="stat-label">{label}</div>
