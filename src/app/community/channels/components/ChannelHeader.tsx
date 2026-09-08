@@ -1,416 +1,121 @@
-'use client'
+"use client";
 
-import { useEffect, useRef, useState } from 'react'
-import { COLORS } from '../constants'
+import {
+  Bell,
+  Hash,
+  MoreHorizontal,
+  Pin,
+  Search,
+  Users,
+} from "lucide-react";
 
-type ChannelHeaderProps = {
-  channel: {
-    id: string
-    name: string
-    description: string
-    online: number
-    unread: number
-  }
+import type { Channel } from "../types/channel";
+
+interface ChannelHeaderProps {
+  channel: Channel;
+  onSearch?: () => void;
+  onPinned?: () => void;
+  onMembers?: () => void;
+  onMore?: () => void;
 }
 
 export function ChannelHeader({
   channel,
+  onSearch,
+  onPinned,
+  onMembers,
+  onMore,
 }: ChannelHeaderProps) {
-  const [menuOpen, setMenuOpen] = useState(false)
-  const menuRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (!menuOpen) return
-
-    const handlePointerDown = (event: MouseEvent) => {
-      if (
-        menuRef.current &&
-        !menuRef.current.contains(
-          event.target as Node,
-        )
-      ) {
-        setMenuOpen(false)
-      }
-    }
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setMenuOpen(false)
-      }
-    }
-
-    document.addEventListener(
-      'mousedown',
-      handlePointerDown,
-    )
-
-    document.addEventListener(
-      'keydown',
-      handleKeyDown,
-    )
-
-    return () => {
-      document.removeEventListener(
-        'mousedown',
-        handlePointerDown,
-      )
-
-      document.removeEventListener(
-        'keydown',
-        handleKeyDown,
-      )
-    }
-  }, [menuOpen])
-
-  const copyChannelName = async () => {
-    try {
-      await navigator.clipboard.writeText(
-        `#${channel.name.replace(/^#/, '')}`,
-      )
-    } catch {
-      // Clipboard access can be unavailable.
-    }
-
-    setMenuOpen(false)
-  }
-
-  const markAsRead = () => {
-    setMenuOpen(false)
-  }
-
-  const muteChannel = () => {
-    setMenuOpen(false)
-  }
-
-  const channelName = channel.name.replace(
-    /^#/,
-    '',
-  )
-
   return (
-    <header
-      style={{
-        position: 'relative',
-        minHeight: '66px',
-        flexShrink: 0,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: '20px',
-        padding: '0 20px',
-        background: COLORS.surface,
-        borderBottom: `1px solid ${COLORS.border}`,
-        boxSizing: 'border-box',
-        zIndex: 20,
-      }}
-    >
-      <div
-        style={{
-          minWidth: 0,
-          flex: 1,
-        }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-          }}
-        >
-          <span
-            aria-hidden="true"
-            style={{
-              color: COLORS.blue,
-              fontSize: '18px',
-              lineHeight: '18px',
-              fontWeight: 500,
-            }}
-          >
-            #
-          </span>
+    <header className="flex h-[64px] shrink-0 items-center justify-between border-b border-white/[0.08] bg-slate-950/25 px-5 backdrop-blur-2xl">
+      {/* Channel identity */}
 
-          <span
-            style={{
-              minWidth: 0,
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-              color: COLORS.text,
-              fontSize: '15px',
-              lineHeight: '20px',
-              fontWeight: 600,
-              letterSpacing: '-0.01em',
-            }}
-          >
-            {channelName}
-          </span>
-
-          <span
-            aria-label="Channel online"
-            title="Channel active"
-            style={{
-              width: '6px',
-              height: '6px',
-              flexShrink: 0,
-              borderRadius: '50%',
-              background: COLORS.green,
-            }}
-          />
+      <div className="flex min-w-0 items-center gap-3">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/[0.1] bg-white/[0.055] text-white/55 shadow-[0_6px_20px_rgba(0,0,0,.12)] backdrop-blur-xl">
+          <Hash size={17} strokeWidth={1.7} />
         </div>
 
-        <div
-          style={{
-            marginTop: '3px',
-            color: COLORS.textMuted,
-            fontSize: '10px',
-            lineHeight: '14px',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-          }}
-        >
-          {channel.description}
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <h1 className="truncate text-[13px] font-semibold text-white/90">
+              {channel.name}
+            </h1>
+
+            {channel.online && (
+              <span className="flex items-center gap-1 text-[9px] text-[#71aa82]">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#71aa82] shadow-[0_0_7px_rgba(113,170,130,.45)]" />
+                Active
+              </span>
+            )}
+          </div>
+
+          <p className="mt-0.5 truncate text-[10px] text-white/35">
+            {channel.description}
+          </p>
         </div>
       </div>
 
-      <div
-        style={{
-          position: 'relative',
-          flexShrink: 0,
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-        }}
-      >
-        <div
-          style={{
-            height: '32px',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '6px',
-            padding: '0 11px',
-            border: `1px solid ${COLORS.border}`,
-            borderRadius: '7px',
-            background: COLORS.surface,
-            color: COLORS.textMuted,
-            fontSize: '10px',
-            lineHeight: '14px',
-            whiteSpace: 'nowrap',
-            boxSizing: 'border-box',
-          }}
+      {/* Actions */}
+
+      <div className="ml-4 flex shrink-0 items-center gap-1">
+        <HeaderAction
+          label="Search"
+          onClick={onSearch}
         >
-          <span
-            aria-hidden="true"
-            style={{
-              width: '5px',
-              height: '5px',
-              borderRadius: '50%',
-              background: COLORS.green,
-            }}
-          />
+          <Search size={15} />
+        </HeaderAction>
 
-          {channel.online} active
-        </div>
-
-        <button
-          type="button"
-          aria-label="Channel discussions"
-          style={{
-            height: '32px',
-            padding: '0 12px',
-            border: `1px solid ${COLORS.border}`,
-            borderRadius: '7px',
-            background: COLORS.blueSoft,
-            color: COLORS.blue,
-            fontFamily: 'inherit',
-            fontSize: '10px',
-            lineHeight: '14px',
-            fontWeight: 600,
-            cursor: 'default',
-            boxSizing: 'border-box',
-          }}
+        <HeaderAction
+          label="Pinned messages"
+          onClick={onPinned}
         >
-          Channels / Discussions
-        </button>
+          <Pin size={15} />
+        </HeaderAction>
 
-        <div
-          ref={menuRef}
-          style={{
-            position: 'relative',
-          }}
+        <HeaderAction
+          label="Notifications"
         >
-          <button
-            type="button"
-            aria-label="More channel options"
-            aria-haspopup="menu"
-            aria-expanded={menuOpen}
-            onClick={() =>
-              setMenuOpen(previous => !previous)
-            }
-            style={{
-              width: '32px',
-              height: '32px',
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: 0,
-              border: `1px solid ${
-                menuOpen
-                  ? COLORS.blue
-                  : COLORS.border
-              }`,
-              borderRadius: '7px',
-              background: menuOpen
-                ? COLORS.blueSoft
-                : COLORS.surface,
-              color: menuOpen
-                ? COLORS.blue
-                : COLORS.textMuted,
-              fontFamily: 'inherit',
-              fontSize: '15px',
-              lineHeight: '15px',
-              fontWeight: 700,
-              letterSpacing: '2px',
-              cursor: 'pointer',
-              boxSizing: 'border-box',
-              transition:
-                'border-color .15s ease, background .15s ease, color .15s ease',
-            }}
-          >
-            <span
-              aria-hidden="true"
-              style={{
-                position: 'relative',
-                top: '-1px',
-              }}
-            >
-              ···
-            </span>
-          </button>
+          <Bell size={15} />
+        </HeaderAction>
 
-          {menuOpen && (
-            <div
-              role="menu"
-              aria-label="Channel options"
-              style={{
-                position: 'absolute',
-                top: 'calc(100% + 7px)',
-                right: 0,
-                width: '188px',
-                padding: '5px',
-                border: `1px solid ${COLORS.border}`,
-                borderRadius: '8px',
-                background: COLORS.surface,
-                boxShadow:
-                  '0 10px 28px rgba(20, 35, 55, 0.12)',
-                boxSizing: 'border-box',
-              }}
-            >
-              <button
-                type="button"
-                role="menuitem"
-                onClick={markAsRead}
-                style={{
-                  width: '100%',
-                  display: 'block',
-                  padding: '9px 10px',
-                  border: 0,
-                  borderRadius: '5px',
-                  background: 'transparent',
-                  color: COLORS.text,
-                  textAlign: 'left',
-                  fontFamily: 'inherit',
-                  fontSize: '10px',
-                  lineHeight: '14px',
-                  cursor: 'pointer',
-                }}
-                onMouseEnter={event => {
-                  event.currentTarget.style.background =
-                    COLORS.surfaceSoft
-                }}
-                onMouseLeave={event => {
-                  event.currentTarget.style.background =
-                    'transparent'
-                }}
-              >
-                Mark channel as read
-              </button>
+        <HeaderAction
+          label="Members"
+          onClick={onMembers}
+        >
+          <Users size={15} />
+        </HeaderAction>
 
-              <button
-                type="button"
-                role="menuitem"
-                onClick={muteChannel}
-                style={{
-                  width: '100%',
-                  display: 'block',
-                  padding: '9px 10px',
-                  border: 0,
-                  borderRadius: '5px',
-                  background: 'transparent',
-                  color: COLORS.text,
-                  textAlign: 'left',
-                  fontFamily: 'inherit',
-                  fontSize: '10px',
-                  lineHeight: '14px',
-                  cursor: 'pointer',
-                }}
-                onMouseEnter={event => {
-                  event.currentTarget.style.background =
-                    COLORS.surfaceSoft
-                }}
-                onMouseLeave={event => {
-                  event.currentTarget.style.background =
-                    'transparent'
-                }}
-              >
-                Mute channel
-              </button>
-
-              <div
-                aria-hidden="true"
-                style={{
-                  height: '1px',
-                  margin: '4px 5px',
-                  background: COLORS.border,
-                }}
-              />
-
-              <button
-                type="button"
-                role="menuitem"
-                onClick={() => {
-                  void copyChannelName()
-                }}
-                style={{
-                  width: '100%',
-                  display: 'block',
-                  padding: '9px 10px',
-                  border: 0,
-                  borderRadius: '5px',
-                  background: 'transparent',
-                  color: COLORS.text,
-                  textAlign: 'left',
-                  fontFamily: 'inherit',
-                  fontSize: '10px',
-                  lineHeight: '14px',
-                  cursor: 'pointer',
-                }}
-                onMouseEnter={event => {
-                  event.currentTarget.style.background =
-                    COLORS.surfaceSoft
-                }}
-                onMouseLeave={event => {
-                  event.currentTarget.style.background =
-                    'transparent'
-                }}
-              >
-                Copy channel name
-              </button>
-            </div>
-          )}
-        </div>
+        <HeaderAction
+          label="More options"
+          onClick={onMore}
+        >
+          <MoreHorizontal size={16} />
+        </HeaderAction>
       </div>
     </header>
-  )
+  );
 }
 
+interface HeaderActionProps {
+  label: string;
+  children: React.ReactNode;
+  onClick?: () => void;
+}
+
+function HeaderAction({
+  label,
+  children,
+  onClick,
+}: HeaderActionProps) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      title={label}
+      onClick={onClick}
+      className="flex h-8 w-8 items-center justify-center rounded-lg border border-transparent text-white/35 transition-all duration-200 hover:border-white/[0.08] hover:bg-white/[0.055] hover:text-white/75"
+    >
+      {children}
+    </button>
+  );
+}

@@ -1,96 +1,34 @@
-'use client'
+"use client";
 
-import { useId } from 'react'
+import { Search } from "lucide-react";
 
-import {
-  CHANNEL_SEARCH_PLACEHOLDER,
-  COLORS,
-} from '../constants'
-
-type ChannelSearchProps = {
-  value: string
-  onChange: (value: string) => void
+interface ChannelSearchProps {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
 }
 
 export function ChannelSearch({
   value,
   onChange,
+  placeholder = "Search channels...",
 }: ChannelSearchProps) {
-  const inputId = useId()
-
   return (
-    <div
-      style={{
-        padding: '14px 14px 13px',
-        background: COLORS.surface,
-        borderBottom: `1px solid ${COLORS.border}`,
-        boxSizing: 'border-box',
-      }}
-    >
-      <label
-        htmlFor={inputId}
-        style={{
-          position: 'absolute',
-          width: '1px',
-          height: '1px',
-          padding: 0,
-          margin: '-1px',
-          overflow: 'hidden',
-          clip: 'rect(0, 0, 0, 0)',
-          whiteSpace: 'nowrap',
-          border: 0,
-        }}
-      >
-        Search channels
-      </label>
+    <div className="relative">
+      <Search
+        size={15}
+        strokeWidth={1.8}
+        className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-white/35"
+      />
 
-      <div
-        style={{
-          position: 'relative',
-        }}
-      >
-        <span
-          aria-hidden="true"
-          style={{
-            position: 'absolute',
-            left: '11px',
-            top: '50%',
-            transform: 'translateY(-50%)',
-            color: COLORS.textDim,
-            fontSize: '13px',
-            lineHeight: 1,
-            pointerEvents: 'none',
-          }}
-        >
-          ⌕
-        </span>
-
-        <input
-          id={inputId}
-          type="search"
-          value={value}
-          onChange={event =>
-            onChange(event.target.value)
-          }
-          placeholder={CHANNEL_SEARCH_PLACEHOLDER}
-          autoComplete="off"
-          spellCheck={false}
-          style={{
-            width: '100%',
-            height: '34px',
-            boxSizing: 'border-box',
-            padding: '0 10px 0 30px',
-            borderRadius: '7px',
-            border: `1px solid ${COLORS.border}`,
-            outline: 'none',
-            background: COLORS.background,
-            color: COLORS.text,
-            fontFamily: 'inherit',
-            fontSize: '11px',
-            lineHeight: '16px',
-          }}
-        />
-      </div>
+      <input
+        type="text"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        aria-label="Search channels"
+        className="h-[38px] w-full rounded-xl border border-white/[0.12] bg-black/20 pl-9 pr-3 text-[12px] text-white outline-none backdrop-blur-xl transition-all placeholder:text-white/35 focus:border-white/[0.2] focus:bg-black/25 focus:ring-1 focus:ring-white/[0.04]"
+      />
     </div>
-  )
+  );
 }
