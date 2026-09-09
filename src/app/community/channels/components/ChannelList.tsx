@@ -16,13 +16,13 @@ export function ChannelList({
   onChannelSelect,
 }: ChannelListProps) {
   return (
-    <div className="mt-3 space-y-1">
+    <div className="space-y-1">
       {channels.map((channel) => (
         <ChannelListItem
           key={channel.id}
           channel={channel}
           active={channel.id === activeChannelId}
-          onSelect={onChannelSelect}
+          onClick={() => onChannelSelect(channel.id)}
         />
       ))}
     </div>

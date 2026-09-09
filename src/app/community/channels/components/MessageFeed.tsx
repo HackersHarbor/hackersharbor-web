@@ -19,55 +19,72 @@ export function MessageFeed({
   onReply,
   onMore,
 }: MessageFeedProps) {
-  /* =========================================================
-     LOADING
-     ========================================================= */
-
   if (loading) {
     return (
-      <div className="flex h-full min-h-[180px] items-center justify-center">
-        <div className="text-center">
-          <div className="mx-auto h-5 w-5 animate-spin rounded-full border-2 border-white/10 border-t-white/50" />
-
-          <p className="mt-3 text-[10px] text-white/30">
-            Loading messages...
-          </p>
+      <div className="flex h-full items-center justify-center">
+        <div
+          className="
+            rounded-xl
+            border
+            border-white/[0.07]
+            bg-white/[0.025]
+            px-4
+            py-3
+            text-[11px]
+            text-white/35
+            backdrop-blur-2xl
+          "
+        >
+          Loading messages...
         </div>
       </div>
     );
   }
 
-  /* =========================================================
-     ERROR
-     ========================================================= */
-
   if (error) {
     return (
-      <div className="flex h-full min-h-[180px] items-center justify-center px-5">
-        <div className="rounded-xl border border-[#c77b7b]/20 bg-[#c77b7b]/[0.06] px-4 py-3 text-[11px] leading-5 text-[#c77b7b]/75 backdrop-blur-xl">
+      <div className="flex h-full items-center justify-center px-5">
+        <div
+          className="
+            rounded-xl
+            border
+            border-red-300/[0.12]
+            bg-red-300/[0.035]
+            px-4
+            py-3
+            text-[11px]
+            text-red-200/65
+            shadow-[0_15px_40px_rgba(0,0,0,.18)]
+            backdrop-blur-2xl
+          "
+        >
           {error}
         </div>
       </div>
     );
   }
 
-  /* =========================================================
-     EMPTY STATE
-     ========================================================= */
-
   if (messages.length === 0) {
     return (
-      <div className="flex h-full min-h-[180px] items-center justify-center px-5">
-        <div className="text-center">
-          <div className="text-2xl opacity-40">
-            💬
-          </div>
-
-          <p className="mt-2 text-[11px] text-white/40">
+      <div className="flex h-full items-center justify-center px-5">
+        <div
+          className="
+            rounded-2xl
+            border
+            border-white/[0.06]
+            bg-white/[0.02]
+            px-8
+            py-7
+            text-center
+            shadow-[0_20px_50px_rgba(0,0,0,.16)]
+            backdrop-blur-2xl
+          "
+        >
+          <p className="text-[11px] text-white/40">
             No messages yet.
           </p>
 
-          <p className="mt-1 text-[9px] text-white/25">
+          <p className="mt-1 text-[9px] text-white/22">
             Start the conversation.
           </p>
         </div>
@@ -75,13 +92,20 @@ export function MessageFeed({
     );
   }
 
-  /* =========================================================
-     MESSAGE LIST
-     ========================================================= */
-
   return (
-    <div className="h-full min-h-0 overflow-y-auto">
-      <div className="py-2">
+    <div
+      className="
+        h-full
+        min-h-0
+        overflow-y-auto
+        px-1
+        py-2
+        scrollbar-thin
+        scrollbar-track-transparent
+        scrollbar-thumb-white/10
+      "
+    >
+      <div className="space-y-2 px-1.5">
         {messages.map((message) => (
           <MessageCard
             key={message.id}

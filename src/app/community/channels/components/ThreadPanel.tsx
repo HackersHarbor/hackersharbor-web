@@ -29,23 +29,53 @@ export function ThreadPanel({
   onMore,
 }: ThreadPanelProps) {
   return (
-    <aside className="flex h-full w-full shrink-0 flex-col border-l border-white/[0.08] bg-slate-950/35 backdrop-blur-2xl">
+    <aside
+      className="
+        flex
+        h-full
+        min-h-0
+        w-full
+        min-w-0
+        flex-1
+        shrink-0
+        flex-col
+        self-stretch
+        overflow-hidden
+        border-l
+        border-white/[0.08]
+        bg-slate-950/35
+        backdrop-blur-2xl
+      "
+    >
       {/* =========================================================
-          HEADER
+          THREAD HEADER
           ========================================================= */}
 
-      <ThreadHeader
-        title={title}
-        replyCount={messages.length}
-        onClose={onClose}
-        onMore={onMore}
-      />
+      <div className="shrink-0">
+        <ThreadHeader
+          title={title}
+          replyCount={messages.length}
+          onClose={onClose}
+          onMore={onMore}
+        />
+      </div>
 
       {/* =========================================================
           THREAD CONTENT
+
+          This is the ONLY flexible area.
           ========================================================= */}
 
-      <div className="min-h-0 flex-1 overflow-y-auto">
+      <div
+        className="
+          min-h-0
+          flex-1
+          overflow-y-auto
+          scrollbar-thin
+          scrollbar-track-transparent
+          scrollbar-thumb-white/10
+        "
+      >
         {/* =======================================================
             ORIGINAL MESSAGE
             ======================================================= */}
@@ -53,7 +83,15 @@ export function ThreadPanel({
         {parentMessage && (
           <section className="border-b border-white/[0.08]">
             <div className="px-4 pb-2 pt-3">
-              <span className="text-[8px] font-semibold uppercase tracking-[0.14em] text-white/25">
+              <span
+                className="
+                  text-[8px]
+                  font-semibold
+                  uppercase
+                  tracking-[0.14em]
+                  text-white/25
+                "
+              >
                 Original message
               </span>
             </div>
@@ -78,7 +116,19 @@ export function ThreadPanel({
           </div>
         ) : error ? (
           <div className="px-4 py-5">
-            <div className="rounded-xl border border-[#c77b7b]/20 bg-[#c77b7b]/[0.06] px-4 py-3 text-[10px] leading-5 text-[#c77b7b]/75">
+            <div
+              className="
+                rounded-xl
+                border
+                border-[#c77b7b]/20
+                bg-[#c77b7b]/[0.06]
+                px-4
+                py-3
+                text-[10px]
+                leading-5
+                text-[#c77b7b]/75
+              "
+            >
               {error}
             </div>
           </div>
@@ -90,12 +140,30 @@ export function ThreadPanel({
       </div>
 
       {/* =========================================================
-          REPLY COMPOSER
+          THREAD COMPOSER
+
+          IMPORTANT:
+          mt-auto keeps this at the absolute bottom of the
+          thread column without changing the thread content.
           ========================================================= */}
 
-      <ThreadComposer
-        onSend={onSendReply}
-      />
+      <div
+        className="
+          relative
+          z-20
+          mt-auto
+          shrink-0
+          w-full
+          border-t
+          border-white/[0.065]
+          bg-[#0b1016]/[0.48]
+          backdrop-blur-3xl
+        "
+      >
+        <ThreadComposer
+          onSend={onSendReply}
+        />
+      </div>
     </aside>
   );
 }

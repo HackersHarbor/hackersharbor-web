@@ -50,11 +50,15 @@ export function MessageFilters({
 
   return (
     <div className="flex items-center gap-2">
+      {/* Filter label */}
+
       <div className="flex h-7 items-center gap-1.5 text-[9px] text-white/25">
         <Filter size={11} />
 
         <span>Filter</span>
       </div>
+
+      {/* Filter select */}
 
       <div className="relative">
         <select
@@ -65,7 +69,24 @@ export function MessageFilters({
             )
           }
           aria-label="Filter messages"
-          className="h-7 appearance-none rounded-lg border border-white/[0.08] bg-white/[0.035] py-0 pl-2.5 pr-7 text-[9px] text-white/50 outline-none transition hover:border-white/[0.13] hover:bg-white/[0.05] focus:border-white/[0.16]"
+          className="
+            h-7
+            appearance-none
+            rounded-lg
+            border
+            border-white/[0.08]
+            bg-white/[0.035]
+            py-0
+            pl-2.5
+            pr-7
+            text-[9px]
+            text-white/50
+            outline-none
+            transition
+            hover:border-white/[0.13]
+            hover:bg-white/[0.05]
+            focus:border-white/[0.16]
+          "
         >
           {FILTERS.map((filter) => (
             <option
@@ -80,19 +101,43 @@ export function MessageFilters({
 
         <ChevronDown
           size={11}
-          className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-white/25"
+          className="
+            pointer-events-none
+            absolute
+            right-2
+            top-1/2
+            -translate-y-1/2
+            text-white/25
+          "
         />
       </div>
+
+      {/* Clear active filter */}
 
       {activeFilter.value !== "all" && (
         <button
           type="button"
           onClick={() => onChange?.("all")}
-          className="flex h-7 items-center gap-1 rounded-lg border border-white/[0.07] bg-white/[0.025] px-2 text-[9px] text-white/35 transition hover:bg-white/[0.05] hover:text-white/60"
+          className="
+            flex
+            h-7
+            items-center
+            gap-1
+            rounded-lg
+            border
+            border-white/[0.07]
+            bg-white/[0.025]
+            px-2
+            text-[9px]
+            text-white/35
+            transition
+            hover:bg-white/[0.05]
+            hover:text-white/60
+          "
         >
           <Check size={10} />
 
-          Clear
+          <span>Clear</span>
         </button>
       )}
     </div>

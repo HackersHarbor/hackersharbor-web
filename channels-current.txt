@@ -1,0 +1,889 @@
+﻿'use client'
+
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
+
+import {
+  CHANNELS,
+  DEFAULT_CHANNEL_ID,
+} from './data/channelData'
+
+import {
+  LocalMessageService,
+} from './services/messageService'
+
+import type {
+  Message,
+} from './types'
+
+import {
+  TopNavigation,
+} from './components/TopNavigation'
+
+import {
+  ChannelSidebar,
+} from './components/ChannelSidebar'
+
+import {
+  ChannelContent,
+} from './components/ChannelContent'
+
+import { ThreadPanel } from './components/ThreadPanel'
+
+const messageService =
+  new LocalMessageService()
+
+const initialMessages: Record<
+  string,
+  Message[]
+> = {
+  general: [
+    {
+      id: 'general-1',
+      channelId: 'general',
+      userId: 'arjun',
+      username: 'Arjun K.',
+      initials: 'AK',
+      avatarColor: '#EEF4FF',
+      nameColor: '#3F7CFF',
+      content:
+        'Good morning everyone! Just solved my first Hard problem on HackersHarbor.',
+      createdAt:
+        '2026-08-31T10:24:00',
+      reactions: [],
+    },
+    {
+      id: 'general-2',
+      channelId: 'general',
+      userId: 'meera',
+      username: 'Meera S.',
+      initials: 'MS',
+      avatarColor: '#EEF9F1',
+      nameColor: '#2F8F46',
+      content:
+        "That's amazing Arjun! Which problem was it?",
+      createdAt:
+        '2026-08-31T10:26:00',
+      reactions: [],
+    },
+    {
+      id: 'general-3',
+      channelId: 'general',
+      userId: 'arjun',
+      username: 'Arjun K.',
+      initials: 'AK',
+      avatarColor: '#EEF4FF',
+      nameColor: '#3F7CFF',
+      content:
+        'Trapping Rain Water! Took me 3 days but finally got it.',
+      createdAt:
+        '2026-08-31T10:27:00',
+      reactions: [],
+    },
+    {
+      id: 'general-4',
+      channelId: 'general',
+      userId: 'rahul',
+      username: 'Rahul P.',
+      initials: 'RP',
+      avatarColor: '#F5F0FF',
+      nameColor: '#7657B8',
+      content:
+        'That problem is brutal. Congrats! The two pointer approach is key.',
+      createdAt:
+        '2026-08-31T10:31:00',
+      reactions: [],
+    },
+    {
+      id: 'general-5',
+      channelId: 'general',
+      userId: 'meera',
+      username: 'Meera S.',
+      initials: 'MS',
+      avatarColor: '#EEF9F1',
+      nameColor: '#2F8F46',
+      content:
+        'Anyone else preparing for TCS NQT this month?',
+      createdAt:
+        '2026-08-31T10:33:00',
+      reactions: [],
+    },
+    {
+      id: 'general-6',
+      channelId: 'general',
+      userId: 'karan',
+      username: 'Karan M.',
+      initials: 'KM',
+      avatarColor: '#FFF8E8',
+      nameColor: '#A56A00',
+      content:
+        "Yes! I'm using the TCS NQT voyage on here. 3 weeks in and feeling confident.",
+      createdAt:
+        '2026-08-31T10:35:00',
+      reactions: [],
+    },
+    {
+      id: 'general-7',
+      channelId: 'general',
+      userId: 'neha',
+      username: 'Neha R.',
+      initials: 'NR',
+      avatarColor: '#ECFBFD',
+      nameColor: '#16899A',
+      content:
+        'The Navigator AI is so helpful for explaining concepts I get stuck on.',
+      createdAt:
+        '2026-08-31T10:38:00',
+      reactions: [],
+    },
+  ],
+
+  python: [
+    {
+      id: 'python-1',
+      channelId: 'python',
+      userId: 'rahul',
+      username: 'Rahul P.',
+      initials: 'RP',
+      avatarColor: '#F5F0FF',
+      nameColor: '#7657B8',
+      content:
+        'Anyone know how to use decorators with async functions in Python?',
+      createdAt:
+        '2026-08-31T09:15:00',
+      reactions: [],
+    },
+    {
+      id: 'python-2',
+      channelId: 'python',
+      userId: 'meera',
+      username: 'Meera S.',
+      initials: 'MS',
+      avatarColor: '#EEF9F1',
+      nameColor: '#2F8F46',
+      content:
+        'Yes! You need to use functools.wraps and make the wrapper async too.',
+      createdAt:
+        '2026-08-31T09:18:00',
+      reactions: [],
+    },
+    {
+      id: 'python-3',
+      channelId: 'python',
+      userId: 'meera',
+      username: 'Meera S.',
+      initials: 'MS',
+      avatarColor: '#EEF9F1',
+      nameColor: '#2F8F46',
+      content:
+        '```python\nimport functools\n\ndef my_decorator(func):\n    @functools.wraps(func)\n    async def wrapper(*args, **kwargs):\n        return await func(*args, **kwargs)\n    return wrapper\n```',
+      createdAt:
+        '2026-08-31T09:19:00',
+      reactions: [],
+    },
+    {
+      id: 'python-4',
+      channelId: 'python',
+      userId: 'rahul',
+      username: 'Rahul P.',
+      initials: 'RP',
+      avatarColor: '#F5F0FF',
+      nameColor: '#7657B8',
+      content:
+        'Perfect! That worked. Thank you.',
+      createdAt:
+        '2026-08-31T09:22:00',
+      reactions: [],
+    },
+  ],
+
+  jobs: [
+    {
+      id: 'jobs-1',
+      channelId: 'jobs',
+      userId: 'karan',
+      username: 'Karan M.',
+      initials: 'KM',
+      avatarColor: '#FFF8E8',
+      nameColor: '#A56A00',
+      content:
+        'Amazon is hiring for SDE-1 in Bangalore. 3+ years experience.',
+      createdAt:
+        '2026-08-31T08:00:00',
+      reactions: [],
+    },
+    {
+      id: 'jobs-2',
+      channelId: 'jobs',
+      userId: 'neha',
+      username: 'Neha R.',
+      initials: 'NR',
+      avatarColor: '#ECFBFD',
+      nameColor: '#16899A',
+      content:
+        'Razorpay is also hiring for their data engineering team. DM me for referral.',
+      createdAt:
+        '2026-08-31T08:45:00',
+      reactions: [],
+    },
+    {
+      id: 'jobs-3',
+      channelId: 'jobs',
+      userId: 'arjun',
+      username: 'Arjun K.',
+      initials: 'AK',
+      avatarColor: '#EEF4FF',
+      nameColor: '#3F7CFF',
+      content:
+        'Just got an offer from Flipkart! HackersHarbor practice really helped.',
+      createdAt:
+        '2026-08-31T09:30:00',
+      reactions: [],
+    },
+  ],
+}
+
+type ThreadReply = {
+  id: string
+  messageId: string
+  username: string
+  initials: string
+  avatarColor: string
+  content: string
+  createdAt: string
+}
+
+const initialThreadReplies: Record<
+  string,
+  ThreadReply[]
+> = {
+  'general-3': [
+    {
+      id: 'reply-1',
+      messageId: 'general-3',
+      username: 'Meera S.',
+      initials: 'MS',
+      avatarColor: '#EEF9F1',
+      content:
+        'Which approach did you finally use?',
+      createdAt:
+        '2026-08-31T10:40:00',
+    },
+    {
+      id: 'reply-2',
+      messageId: 'general-3',
+      username: 'Rahul P.',
+      initials: 'RP',
+      avatarColor: '#F5F0FF',
+      content:
+        'Two pointer is usually the cleanest approach.',
+      createdAt:
+        '2026-08-31T10:42:00',
+    },
+    {
+      id: 'reply-3',
+      messageId: 'general-3',
+      username: 'Arjun K.',
+      initials: 'AK',
+      avatarColor: '#EEF4FF',
+      content:
+        'Yes, exactly. Once I understood the left and right max values it clicked.',
+      createdAt:
+        '2026-08-31T10:44:00',
+    },
+  ],
+}
+
+export default function Channels() {
+  const [
+    activeChannelId,
+    setActiveChannelId,
+  ] = useState<string>(
+    DEFAULT_CHANNEL_ID,
+  )
+
+  const [
+    searchQuery,
+    setSearchQuery,
+  ] = useState('')
+
+  const [
+    messageInput,
+    setMessageInput,
+  ] = useState('')
+
+  const [
+    messages,
+    setMessages,
+  ] = useState<
+    Record<string, Message[]>
+  >(initialMessages)
+
+  const [
+    sendingMessage,
+    setSendingMessage,
+  ] = useState(false)
+
+  const [
+    loadingMessages,
+    setLoadingMessages,
+  ] = useState(false)
+
+  const [darkMode, setDarkMode] = useState(false)
+
+  const [
+    selectedThreadMessage,
+    setSelectedThreadMessage,
+  ] = useState<Message | null>(null)
+
+  const [
+    threadReplies,
+    setThreadReplies,
+  ] = useState<
+    Record<string, ThreadReply[]>
+  >(initialThreadReplies)
+
+  const [
+    threadInput,
+    setThreadInput,
+  ] = useState('')
+
+  const [
+    sendingReply,
+    setSendingReply,
+  ] = useState(false)
+
+  const messagesEndRef =
+    useRef<HTMLDivElement>(null)
+
+  const activeChannel =
+    useMemo(
+      () =>
+        CHANNELS.find(
+          channel =>
+            channel.id ===
+            activeChannelId,
+        ) ?? CHANNELS[0],
+      [activeChannelId],
+    )
+
+  const currentMessages =
+    messages[activeChannelId] ?? []
+
+  const selectedReplies =
+    selectedThreadMessage
+      ? threadReplies[
+          selectedThreadMessage.id
+        ] ?? []
+      : []
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({
+      behavior: 'smooth',
+    })
+  }, [
+    activeChannelId,
+    currentMessages.length,
+  ])
+
+  useEffect(() => {
+    try {
+      const theme = localStorage.getItem('hackersharbor-theme')
+      if (theme) {
+        setDarkMode(theme === 'dark')
+      }
+    } catch {}
+
+  }, [])
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        'hackersharbor-theme',
+        darkMode ? 'dark' : 'light',
+      )
+    } catch {}
+  }, [darkMode])
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadMessages() {
+      setLoadingMessages(true)
+
+      try {
+        const localMessages =
+          await messageService.getMessages(
+            activeChannelId,
+          )
+
+        if (
+          !cancelled &&
+          localMessages.length > 0
+        ) {
+          setMessages(previous => ({
+            ...previous,
+            [activeChannelId]:
+              localMessages,
+          }))
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadingMessages(false)
+        }
+      }
+    }
+
+    void loadMessages()
+
+    return () => {
+      cancelled = true
+    }
+  }, [activeChannelId])
+
+  const selectChannel = (
+    channelId: string,
+  ) => {
+    setActiveChannelId(channelId)
+    setMessageInput('')
+    setSelectedThreadMessage(null)
+    setThreadInput('')
+  }
+
+  const sendMessage = async () => {
+    const content =
+      messageInput.trim()
+
+    if (
+      !content ||
+      sendingMessage
+    ) {
+      return
+    }
+
+    setSendingMessage(true)
+
+    try {
+      const message =
+        await messageService.sendMessage(
+          activeChannelId,
+          content,
+        )
+
+      setMessages(previous => ({
+        ...previous,
+        [activeChannelId]: [
+          ...(previous[
+            activeChannelId
+          ] ?? []),
+          message,
+        ],
+      }))
+
+      setMessageInput('')
+    } finally {
+      setSendingMessage(false)
+    }
+  }
+
+  const toggleReaction = async (
+    messageId: string,
+    emoji: string,
+  ) => {
+    try {
+      const updated =
+        await messageService.toggleReaction(
+          messageId,
+          emoji,
+        )
+
+      setMessages(previous => ({
+        ...previous,
+        [activeChannelId]: (
+          previous[
+            activeChannelId
+          ] ?? []
+        ).map(message =>
+          message.id === messageId
+            ? updated
+            : message,
+        ),
+      }))
+    } catch {
+      // Reaction failure is isolated.
+    }
+  }
+
+  const openThread = (
+    message: Message,
+  ) => {
+    setSelectedThreadMessage(message)
+    setThreadInput('')
+  }
+
+  const closeThread = () => {
+    setSelectedThreadMessage(null)
+    setThreadInput('')
+  }
+
+  const sendThreadReply = () => {
+    const content =
+      threadInput.trim()
+
+    if (
+      !content ||
+      !selectedThreadMessage ||
+      sendingReply
+    ) {
+      return
+    }
+
+    setSendingReply(true)
+
+    const reply: ThreadReply = {
+      id:
+        `${selectedThreadMessage.id}-reply-${Date.now()}`,
+      messageId:
+        selectedThreadMessage.id,
+      username: 'Punith K.',
+      initials: 'PK',
+      avatarColor: '#EEF4FF',
+      content,
+      createdAt:
+        new Date().toISOString(),
+    }
+
+    setThreadReplies(previous => ({
+      ...previous,
+      [selectedThreadMessage.id]: [
+        ...(previous[
+          selectedThreadMessage.id
+        ] ?? []),
+        reply,
+      ],
+    }))
+
+    setThreadInput('')
+    setSendingReply(false)
+  }
+
+  return (
+    <div
+      id="channels-root"
+      className={darkMode ? 'channels-dark-mode' : 'channels-light-mode'}
+      data-theme={darkMode ? 'dark' : 'light'}
+      style={{
+        width: '100%',
+        height: '100vh',
+        minHeight: '600px',
+        display: 'flex',
+        flexDirection: 'column',
+        background: darkMode ? '#050A14' : '#F8FAFF',
+        color: darkMode ? '#F5F8FF' : '#0F1923',
+        fontFamily:
+          'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+        overflow: 'hidden',
+        transition: 'background 180ms ease, color 180ms ease',
+      }}
+    >
+      <style>{`
+        #channels-root {
+          --hh-page: #F8FAFF;
+          --hh-sidebar: #FFFFFF;
+          --hh-panel: #FFFFFF;
+          --hh-panel-strong: #FFFFFF;
+          --hh-border: #E8EDF2;
+          --hh-border-light: #DDE4EC;
+          --hh-heading: #0F1923;
+          --hh-text: #42536A;
+          --hh-muted: #6B7C93;
+          --hh-faint: #9AA8B8;
+          --hh-blue: #1549C2;
+          --hh-blue-soft: #F1F5FF;
+        }
+
+        #channels-root.channels-dark-mode {
+          --hh-page: #050A14;
+          --hh-sidebar: #07101E;
+          --hh-panel: #0A1424;
+          --hh-panel-strong: #0C182B;
+          --hh-border: #17253B;
+          --hh-border-light: #1B2C47;
+          --hh-heading: #F5F8FF;
+          --hh-text: #C5D0E2;
+          --hh-muted: #7F8EA7;
+          --hh-faint: #596A84;
+          --hh-blue: #3978FF;
+          --hh-blue-soft: #102858;
+          color-scheme: dark;
+        }
+
+        #channels-root.channels-light-mode {
+          color-scheme: light;
+        }
+
+        #channels-root.channels-dark-mode,
+        #channels-root.channels-light-mode {
+          background: var(--hh-page) !important;
+          color: var(--hh-heading) !important;
+        }
+
+        /* Dashboard theme mapping for the existing Channels components. */
+        #channels-root [style*='rgb(11, 20, 32)'],
+        #channels-root [style*='#0B1420'] { background: var(--hh-page) !important; }
+        #channels-root [style*='rgb(16, 27, 41)'],
+        #channels-root [style*='#101B29'] { background: var(--hh-panel) !important; }
+        #channels-root [style*='rgb(13, 24, 38)'],
+        #channels-root [style*='#0D1826'] { background: var(--hh-panel-strong) !important; }
+        #channels-root [style*='rgb(36, 52, 71)'],
+        #channels-root [style*='#243447'] { border-color: var(--hh-border) !important; }
+        #channels-root [style*='rgb(28, 42, 58)'],
+        #channels-root [style*='#1C2A3A'] { border-color: var(--hh-border-light) !important; }
+        #channels-root [style*='rgb(232, 238, 246)'],
+        #channels-root [style*='#E8EEF6'] { color: var(--hh-heading) !important; }
+        #channels-root [style*='rgb(135, 150, 170)'],
+        #channels-root [style*='#8796AA'] { color: var(--hh-muted) !important; }
+        #channels-root [style*='rgb(95, 113, 135)'],
+        #channels-root [style*='#5F7187'] { color: var(--hh-faint) !important; }
+        #channels-root [style*='rgb(74, 140, 255)'],
+        #channels-root [style*='#4A8CFF'] { color: var(--hh-blue) !important; border-color: var(--hh-blue) !important; }
+
+        #channels-root.channels-light-mode [style*='rgb(11, 20, 32)'],
+        #channels-root.channels-light-mode [style*='#0B1420'] { background: var(--hh-page) !important; }
+        #channels-root.channels-light-mode [style*='rgb(16, 27, 41)'],
+        #channels-root.channels-light-mode [style*='#101B29'] { background: var(--hh-panel) !important; }
+        #channels-root.channels-light-mode [style*='rgb(13, 24, 38)'],
+        #channels-root.channels-light-mode [style*='#0D1826'] { background: var(--hh-panel-strong) !important; }
+        #channels-root.channels-light-mode [style*='rgb(36, 52, 71)'],
+        #channels-root.channels-light-mode [style*='#243447'] { border-color: var(--hh-border) !important; }
+        #channels-root.channels-light-mode [style*='rgb(28, 42, 58)'],
+        #channels-root.channels-light-mode [style*='#1C2A3A'] { border-color: var(--hh-border-light) !important; }
+        #channels-root.channels-light-mode [style*='rgb(232, 238, 246)'],
+        #channels-root.channels-light-mode [style*='#E8EEF6'] { color: var(--hh-heading) !important; }
+        #channels-root.channels-light-mode [style*='rgb(135, 150, 170)'],
+        #channels-root.channels-light-mode [style*='#8796AA'] { color: var(--hh-muted) !important; }
+        #channels-root.channels-light-mode [style*='rgb(95, 113, 135)'],
+        #channels-root.channels-light-mode [style*='#5F7187'] { color: var(--hh-faint) !important; }
+        #channels-root.channels-light-mode [style*='rgb(74, 140, 255)'],
+        #channels-root.channels-light-mode [style*='#4A8CFF'] { color: var(--hh-blue) !important; border-color: var(--hh-blue) !important; }
+
+        #channels-root.channels-dark-mode [style*='background: rgb(255, 255, 255)'],
+        #channels-root.channels-dark-mode [style*='background:#FFFFFF'],
+        #channels-root.channels-dark-mode [style*='background: #FFFFFF'] { background: var(--hh-panel) !important; }
+        #channels-root.channels-dark-mode [style*='rgb(247, 249, 252)'],
+        #channels-root.channels-dark-mode [style*='#F7F9FC'] { background: var(--hh-panel-strong) !important; }
+
+        #channels-root.channels-light-mode [style*='background: rgb(255, 255, 255)'],
+        #channels-root.channels-light-mode [style*='background:#FFFFFF'],
+        #channels-root.channels-light-mode [style*='background: #FFFFFF'] { background: #FFFFFF !important; }
+
+        /* Thread panel uses a few intentionally fixed light colors. */
+        #channels-root.channels-dark-mode > div > aside:last-child {
+          background: var(--hh-panel) !important;
+          border-left-color: var(--hh-border) !important;
+        }
+
+        #channels-root.channels-dark-mode > div > aside:last-child header {
+          border-bottom-color: var(--hh-border) !important;
+        }
+
+        #channels-root.channels-dark-mode > div > aside:last-child [style*='background: rgb(247, 249, 252)'],
+        #channels-root.channels-dark-mode > div > aside:last-child [style*='#F7F9FC'] {
+          background: var(--hh-panel-strong) !important;
+        }
+
+        #channels-root.channels-dark-mode > div > aside:last-child [style*='border: 1px solid rgb(221, 228, 239)'],
+        #channels-root.channels-dark-mode > div > aside:last-child [style*='#DDE4EF'] {
+          border-color: var(--hh-border-light) !important;
+        }
+
+        #channels-root.channels-dark-mode > div > aside:last-child [style*='#172033'],
+        #channels-root.channels-dark-mode > div > aside:last-child [style*='#3B4657'] {
+          color: var(--hh-heading) !important;
+        }
+
+        #channels-root.channels-dark-mode > div > aside:last-child [style*='#8290A5'],
+        #channels-root.channels-dark-mode > div > aside:last-child [style*='#98A3B3'],
+        #channels-root.channels-dark-mode > div > aside:last-child [style*='#66758A'] {
+          color: var(--hh-muted) !important;
+        }
+
+        #channels-root.channels-dark-mode input,
+        #channels-root.channels-dark-mode textarea {
+          color-scheme: dark;
+          background: #0C182B !important;
+          color: #C5D0E2 !important;
+          border-color: #1B2C47 !important;
+        }
+
+        #channels-root.channels-light-mode input,
+        #channels-root.channels-light-mode textarea {
+          color-scheme: light;
+          background: #FFFFFF !important;
+          color: #42536A !important;
+          border-color: #DDE4EC !important;
+        }
+
+        #channels-root .channels-theme-switch {
+          position: fixed;
+          top: 23px;
+          right: 20px;
+          z-index: 1000;
+          width: 48px;
+          height: 26px;
+          padding: 2px;
+          border-radius: 14px;
+          border: 1px solid #CBD9EE;
+          background: #E7ECF4;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: flex-start;
+          box-sizing: border-box;
+          transition: all 0.25s ease;
+        }
+
+        #channels-root .channels-theme-switch:hover {
+          transform: translateY(-1px);
+        }
+
+        #channels-root .channels-theme-switch.active {
+          background: #0D182A;
+          border-color: #3978FF;
+          justify-content: flex-end;
+        }
+
+        #channels-root .channels-theme-switch-knob {
+          width: 20px;
+          height: 20px;
+          border-radius: 50%;
+          background: #FFFFFF;
+          border: 1px solid #D3DAE5;
+          display: block;
+          flex-shrink: 0;
+          box-sizing: border-box;
+          transition: all 0.25s ease;
+          box-shadow: 0 2px 6px rgba(15,25,35,0.12);
+        }
+
+        #channels-root .channels-theme-switch.active .channels-theme-switch-knob {
+          background: #2458C9;
+          border-color: #3978FF;
+          box-shadow: 0 3px 10px rgba(57,120,255,0.3);
+        }
+      `}</style>
+
+      <button
+        type="button"
+        className={darkMode ? 'channels-theme-switch active' : 'channels-theme-switch'}
+        onClick={() => setDarkMode(current => !current)}
+        aria-label="Toggle color theme"
+        aria-pressed={darkMode}
+        title={darkMode ? 'Light mode' : 'Dark mode'}
+      >
+        <span className="channels-theme-switch-knob" />
+      </button>
+
+      <TopNavigation />
+
+      <div
+        style={{
+          flex: 1,
+          minHeight: 0,
+          display: 'flex',
+          overflow: 'hidden',
+        }}
+      >
+        <ChannelSidebar
+          activeChannelId={
+            activeChannelId
+          }
+          searchQuery={
+            searchQuery
+          }
+          onSearchChange={
+            setSearchQuery
+          }
+          onChannelSelect={
+            selectChannel
+          }
+          username="Punith K."
+          initials="PK"
+          online
+        />
+
+        <ChannelContent
+          channel={
+            activeChannel
+          }
+          messages={
+            currentMessages
+          }
+          messageInput={
+            messageInput
+          }
+          loading={
+            loadingMessages
+          }
+          sending={
+            sendingMessage
+          }
+          selectedMessageId={
+            selectedThreadMessage?.id ??
+            null
+          }
+          threadReplyCounts={
+            Object.fromEntries(
+              Object.entries(threadReplies).map(
+                ([messageId, replies]) => [
+                  messageId,
+                  replies.length,
+                ],
+              ),
+            )
+          }
+          onMessageInputChange={
+            setMessageInput
+          }
+          onSendMessage={() => {
+            void sendMessage()
+          }}
+          onToggleReaction={(
+            messageId,
+            emoji,
+          ) => {
+            void toggleReaction(
+              messageId,
+              emoji,
+            )
+          }}
+          onMessageClick={
+            openThread
+          }
+        />
+
+        <ThreadPanel
+          channelName={activeChannel.name}
+          message={selectedThreadMessage}
+          replies={selectedReplies}
+          input={threadInput}
+          sending={sendingReply}
+          onInputChange={setThreadInput}
+          onSend={sendThreadReply}
+          onClose={closeThread}
+        />
+      </div>
+
+      <div
+        ref={messagesEndRef}
+        style={{
+          display: 'none',
+        }}
+      />
+    </div>
+  )
+}

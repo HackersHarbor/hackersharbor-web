@@ -16,118 +16,139 @@ export function ChannelsShell({
   thread,
 }: ChannelsShellProps) {
   return (
-    <main className="relative h-screen overflow-hidden bg-[#080b10] text-white antialiased">
+    <main
+      className="
+        relative
+        h-screen
+        min-h-0
+        overflow-hidden
+        bg-[#070a0e]
+        text-white
+        antialiased
+      "
+    >
       {/* =========================================================
-          AMBIENT DESKTOP / WALLPAPER LAYER
+          GLOBAL GLASS ATMOSPHERE
           ========================================================= */}
 
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 overflow-hidden"
+        className="
+          pointer-events-none
+          absolute
+          inset-0
+          overflow-hidden
+        "
       >
-        {/* Deep base atmosphere */}
+        {/* Base */}
 
-        <div className="absolute inset-0 bg-[#080b10]" />
+        <div className="absolute inset-0 bg-[#070a0e]" />
 
-        {/* Large cold glow — upper left */}
+        {/* -------------------------------------------------------
+            LEFT COLD GLASS LIGHT
+            ------------------------------------------------------- */}
 
         <div
           className="
             absolute
-            -left-[16vw]
+            -left-[18vw]
             -top-[18vh]
-            h-[72vh]
-            w-[62vw]
+            h-[75vh]
+            w-[58vw]
             rounded-full
-            bg-[#526a7c]/[0.15]
+            bg-[#607789]/[0.15]
             blur-[170px]
           "
         />
 
-        {/* Steel-blue glow — left center */}
-
         <div
           className="
             absolute
-            -left-[8vw]
-            top-[22vh]
+            -left-[12vw]
+            top-[18vh]
             h-[58vh]
             w-[38vw]
             rounded-full
-            bg-[#34566e]/[0.12]
-            blur-[145px]
-          "
-        />
-
-        {/* Muted warm glow — upper right */}
-
-        <div
-          className="
-            absolute
-            -right-[13vw]
-            -top-[8vh]
-            h-[62vh]
-            w-[48vw]
-            rounded-full
-            bg-[#75684e]/[0.095]
-            blur-[165px]
-          "
-        />
-
-        {/* Right-middle atmospheric glow */}
-
-        <div
-          className="
-            absolute
-            right-[2vw]
-            top-[38vh]
-            h-[45vh]
-            w-[32vw]
-            rounded-full
-            bg-[#455d70]/[0.075]
+            bg-[#31566f]/[0.11]
             blur-[150px]
           "
         />
 
-        {/* Bottom atmospheric glow */}
+        {/* -------------------------------------------------------
+            CENTER LIGHT
+            ------------------------------------------------------- */}
+
+        <div
+          className="
+            absolute
+            left-[35%]
+            top-[8vh]
+            h-[58vh]
+            w-[40vw]
+            -translate-x-1/2
+            rounded-full
+            bg-[#536a7a]/[0.045]
+            blur-[180px]
+          "
+        />
+
+        {/* -------------------------------------------------------
+            RIGHT WARM GLASS LIGHT
+            ------------------------------------------------------- */}
+
+        <div
+          className="
+            absolute
+            -right-[15vw]
+            -top-[10vh]
+            h-[65vh]
+            w-[48vw]
+            rounded-full
+            bg-[#75694f]/[0.085]
+            blur-[175px]
+          "
+        />
+
+        <div
+          className="
+            absolute
+            right-0
+            top-[34vh]
+            h-[45vh]
+            w-[32vw]
+            rounded-full
+            bg-[#4c6576]/[0.065]
+            blur-[160px]
+          "
+        />
+
+        {/* -------------------------------------------------------
+            LOWER ATMOSPHERE
+            ------------------------------------------------------- */}
 
         <div
           className="
             absolute
             -bottom-[30vh]
             left-[20vw]
-            h-[70vh]
+            h-[65vh]
             w-[65vw]
             rounded-full
-            bg-[#344b61]/[0.105]
-            blur-[180px]
+            bg-[#40576a]/[0.085]
+            blur-[190px]
           "
         />
 
-        {/* Very subtle central illumination */}
-
-        <div
-          className="
-            absolute
-            left-1/2
-            top-[5vh]
-            h-[55vh]
-            w-[38vw]
-            -translate-x-1/2
-            rounded-full
-            bg-white/[0.018]
-            blur-[150px]
-          "
-        />
-
-        {/* Top atmospheric wash */}
+        {/* -------------------------------------------------------
+            TOP GLASS WASH
+            ------------------------------------------------------- */}
 
         <div
           className="
             absolute
             inset-x-0
             top-0
-            h-[32vh]
+            h-[38vh]
             bg-[radial-gradient(
               ellipse_at_50%_0%,
               rgba(255,255,255,0.045),
@@ -136,53 +157,60 @@ export function ChannelsShell({
           "
         />
 
-        {/* Bottom darkness */}
-
-        <div
-          className="
-            absolute
-            inset-x-0
-            bottom-0
-            h-[35vh]
-            bg-[linear-gradient(
-              180deg,
-              transparent,
-              rgba(0,0,0,0.22)
-            )]
-          "
-        />
-
-        {/* Fine wallpaper texture */}
+        {/* -------------------------------------------------------
+            CENTERED GLASS SHEEN
+            ------------------------------------------------------- */}
 
         <div
           className="
             absolute
             inset-0
-            opacity-[0.10]
             bg-[linear-gradient(
-              rgba(255,255,255,0.016)_1px,
+              112deg,
+              rgba(255,255,255,0.012),
+              transparent_28%,
+              rgba(255,255,255,0.008)_65%,
+              transparent
+            )]
+          "
+        />
+
+        {/* -------------------------------------------------------
+            VERY SUBTLE GRID
+            ------------------------------------------------------- */}
+
+        <div
+          className="
+            absolute
+            inset-0
+            opacity-[0.055]
+            bg-[linear-gradient(
+              rgba(255,255,255,0.018)_1px,
               transparent_1px
             ),
             linear-gradient(
               90deg,
-              rgba(255,255,255,0.016)_1px,
+              rgba(255,255,255,0.018)_1px,
               transparent_1px
             )]
             bg-[size:84px_84px]
           "
         />
 
-        {/* Global atmospheric gradient */}
+        {/* -------------------------------------------------------
+            BOTTOM VIGNETTE
+            ------------------------------------------------------- */}
 
         <div
           className="
             absolute
-            inset-0
+            inset-x-0
+            bottom-0
+            h-[42vh]
             bg-[linear-gradient(
-              110deg,
-              rgba(255,255,255,0.012),
-              transparent_35%,
-              rgba(255,255,255,0.008)
+              180deg,
+              transparent,
+              rgba(0,0,0,0.30)
             )]
           "
         />
@@ -192,20 +220,65 @@ export function ChannelsShell({
           APPLICATION
           ========================================================= */}
 
-      <div className="relative z-10 flex h-full min-h-0 flex-col">
+      <div
+        className="
+          relative
+          z-10
+          flex
+          h-full
+          min-h-0
+          flex-col
+        "
+      >
         {/* =======================================================
             TOP NAVIGATION
             ======================================================= */}
 
-        <div className="relative z-30 shrink-0">
+        <div
+          className="
+            relative
+            z-50
+            shrink-0
+          "
+        >
           {topNavigation}
         </div>
 
         {/* =======================================================
-            FLOATING GLASS WORKSPACE
+            WORKSPACE
+
+            IMPORTANT:
+            This is the shared height container for all three
+            columns.
+
+            Sidebar
+            Main
+            Thread
+
+            must all stretch from the same top edge to the same
+            bottom edge.
             ======================================================= */}
 
-        <div className="min-h-0 flex-1 p-2 sm:p-3">
+        <div
+          className="
+            relative
+            min-h-0
+            flex-1
+            overflow-hidden
+            px-0
+            pt-0
+            pb-0
+          "
+        >
+          {/* =====================================================
+              SHARED COLUMN BASELINE
+
+              items-stretch is important here.
+
+              It guarantees that sidebar, main and thread occupy
+              the exact same vertical height.
+              ===================================================== */}
+
           <div
             className="
               relative
@@ -213,16 +286,19 @@ export function ChannelsShell({
               h-full
               min-h-0
               min-w-0
+              items-stretch
               overflow-hidden
-              rounded-[18px]
+              rounded-none
               border
-              border-white/[0.085]
-              bg-[#11151b]/[0.30]
-              shadow-[0_28px_90px_rgba(0,0,0,0.34),0_8px_30px_rgba(0,0,0,0.18)]
-              backdrop-blur-2xl
+              border-white/[0.105]
+              bg-white/[0.018]
+              shadow-[0_35px_120px_rgba(0,0,0,0.42),0_12px_40px_rgba(0,0,0,0.22)]
+              backdrop-blur-[28px]
             "
           >
-            {/* Workspace glass highlight */}
+            {/* ===================================================
+                OUTER GLASS REFLECTION
+                =================================================== */}
 
             <div
               aria-hidden="true"
@@ -230,38 +306,74 @@ export function ChannelsShell({
                 pointer-events-none
                 absolute
                 inset-0
-                z-30
-                rounded-[18px]
+                z-[50]
+                rounded-none
+                border
+                border-white/[0.035]
+              "
+            />
+
+            {/* ===================================================
+                TOP GLASS REFLECTION
+                =================================================== */}
+
+            <div
+              aria-hidden="true"
+              className="
+                pointer-events-none
+                absolute
+                inset-x-0
+                top-0
+                z-[51]
+                h-px
+                bg-white/[0.11]
+              "
+            />
+
+            {/* ===================================================
+                INNER GLASS LIGHT
+                =================================================== */}
+
+            <div
+              aria-hidden="true"
+              className="
+                pointer-events-none
+                absolute
+                inset-0
+                z-[49]
+                rounded-none
                 bg-[linear-gradient(
                   180deg,
-                  rgba(255,255,255,0.018),
-                  transparent_18%,
+                  rgba(255,255,255,0.020),
+                  transparent_15%,
                   transparent_82%,
-                  rgba(0,0,0,0.045)
+                  rgba(0,0,0,0.06)
                 )]
               "
             />
 
-            {/* =================================================
+            {/* ===================================================
                 SIDEBAR
-                ================================================= */}
+                =================================================== */}
 
             <aside
               className="
                 relative
                 z-10
                 flex
+                h-full
+                min-h-0
                 w-[274px]
                 shrink-0
                 flex-col
                 overflow-hidden
                 border-r
-                border-white/[0.075]
-                bg-[#11161d]/[0.39]
-                backdrop-blur-2xl
+                border-white/[0.085]
+                bg-white/[0.018]
+                backdrop-blur-[30px]
               "
             >
-              {/* Sidebar light reflection */}
+              {/* Sidebar glass highlight */}
 
               <div
                 aria-hidden="true"
@@ -270,33 +382,112 @@ export function ChannelsShell({
                   absolute
                   inset-y-0
                   right-0
+                  z-30
                   w-px
                   bg-gradient-to-b
-                  from-white/[0.09]
-                  via-white/[0.025]
+                  from-white/[0.13]
+                  via-white/[0.035]
                   to-transparent
                 "
               />
 
-              {sidebar}
+              {/* Sidebar ambient highlight */}
+
+              <div
+                aria-hidden="true"
+                className="
+                  pointer-events-none
+                  absolute
+                  left-0
+                  top-0
+                  h-[250px]
+                  w-full
+                  bg-[radial-gradient(
+                    ellipse_at_18%_0%,
+                    rgba(255,255,255,0.035),
+                    transparent_70%
+                  )]
+                "
+              />
+
+              {/* Sidebar vertical wash */}
+
+              <div
+                aria-hidden="true"
+                className="
+                  pointer-events-none
+                  absolute
+                  inset-0
+                  bg-[linear-gradient(
+                    180deg,
+                    rgba(255,255,255,0.012),
+                    transparent_35%
+                  )]
+                "
+              />
+
+              {/* =================================================
+                  SIDEBAR CONTENT
+
+                  flex-1 + min-h-0 means the sidebar footer can
+                  stay pinned to the exact bottom.
+                  ================================================= */}
+
+              <div
+                className="
+                  relative
+                  z-10
+                  flex
+                  h-full
+                  min-h-0
+                  flex-1
+                  flex-col
+                "
+              >
+                {sidebar}
+              </div>
             </aside>
 
-            {/* =================================================
+            {/* ===================================================
                 MAIN CHANNEL
-                ================================================= */}
+                =================================================== */}
 
             <section
               className="
                 relative
                 z-10
+                flex
+                h-full
+                min-h-0
                 min-w-0
                 flex-1
+                flex-col
                 overflow-hidden
-                bg-[#0d1218]/[0.28]
-                backdrop-blur-xl
+                border-r
+                border-white/[0.055]
+                bg-white/[0.010]
+                backdrop-blur-[24px]
               "
             >
-              {/* Main glass reflection */}
+              {/* Main left glass edge */}
+
+              <div
+                aria-hidden="true"
+                className="
+                  pointer-events-none
+                  absolute
+                  inset-y-0
+                  left-0
+                  z-30
+                  w-px
+                  bg-gradient-to-b
+                  from-white/[0.055]
+                  via-white/[0.018]
+                  to-transparent
+                "
+              />
+
+              {/* Main top reflection */}
 
               <div
                 aria-hidden="true"
@@ -311,12 +502,33 @@ export function ChannelsShell({
                 "
               />
 
-              {main}
+              {/* =================================================
+                  MAIN CONTENT
+
+                  Explicit h-full ensures MainChannel receives the
+                  entire shared workspace height.
+                  ================================================= */}
+
+              <div
+                className="
+                  relative
+                  z-10
+                  flex
+                  h-full
+                  min-h-0
+                  min-w-0
+                  flex-1
+                  flex-col
+                  overflow-hidden
+                "
+              >
+                {main}
+              </div>
             </section>
 
-            {/* =================================================
+            {/* ===================================================
                 THREAD PANEL
-                ================================================= */}
+                =================================================== */}
 
             {thread && (
               <aside
@@ -324,17 +536,17 @@ export function ChannelsShell({
                   relative
                   z-10
                   flex
-                  w-[395px]
+                  h-full
+                  min-h-0
+                  w-[380px]
                   shrink-0
                   flex-col
                   overflow-hidden
-                  border-l
-                  border-white/[0.075]
-                  bg-[#11161c]/[0.40]
-                  backdrop-blur-2xl
+                  bg-white/[0.018]
+                  backdrop-blur-[30px]
                 "
               >
-                {/* Thread glass reflection */}
+                {/* Thread glass edge */}
 
                 <div
                   aria-hidden="true"
@@ -343,15 +555,70 @@ export function ChannelsShell({
                     absolute
                     inset-y-0
                     left-0
+                    z-30
                     w-px
                     bg-gradient-to-b
-                    from-white/[0.09]
-                    via-white/[0.025]
+                    from-white/[0.13]
+                    via-white/[0.035]
                     to-transparent
                   "
                 />
 
-                {thread}
+                {/* Thread atmospheric reflection */}
+
+                <div
+                  aria-hidden="true"
+                  className="
+                    pointer-events-none
+                    absolute
+                    right-0
+                    top-0
+                    h-[260px]
+                    w-[280px]
+                    translate-x-[38%]
+                    -translate-y-[18%]
+                    rounded-full
+                    bg-[#728394]/[0.055]
+                    blur-[90px]
+                  "
+                />
+
+                {/* Thread top reflection */}
+
+                <div
+                  aria-hidden="true"
+                  className="
+                    pointer-events-none
+                    absolute
+                    inset-x-0
+                    top-0
+                    z-20
+                    h-px
+                    bg-white/[0.07]
+                  "
+                />
+
+                {/* =================================================
+                    THREAD CONTENT
+
+                    Explicit h-full + flex column makes the
+                    ThreadComposer remain attached to the bottom.
+                    ================================================= */}
+
+                <div
+                  className="
+                    relative
+                    z-10
+                    flex
+                    h-full
+                    min-h-0
+                    flex-1
+                    flex-col
+                    overflow-hidden
+                  "
+                >
+                  {thread}
+                </div>
               </aside>
             )}
           </div>
@@ -359,7 +626,7 @@ export function ChannelsShell({
       </div>
 
       {/* =========================================================
-          EDGE VIGNETTE
+          GLOBAL VIGNETTE
           ========================================================= */}
 
       <div
@@ -368,8 +635,8 @@ export function ChannelsShell({
           pointer-events-none
           absolute
           inset-0
-          z-40
-          shadow-[inset_0_0_150px_rgba(0,0,0,0.38)]
+          z-[60]
+          shadow-[inset_0_0_150px_rgba(0,0,0,0.40)]
         "
       />
     </main>

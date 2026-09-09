@@ -1,6 +1,10 @@
 import type { IMessageService } from "./IMessageService";
 import type { Message } from "../types/message";
 
+/* =========================================================
+   INITIAL COMMUNITY MESSAGES
+   ========================================================= */
+
 const INITIAL_MESSAGES: Message[] = [
   {
     id: "message-1",
@@ -98,7 +102,7 @@ print(numbers)`,
     timestamp: "8:51 AM",
     tags: [
       {
-        label: "SQL",
+        label: "SQL Mentor",
         icon: "database",
       },
     ],
@@ -119,7 +123,7 @@ print(numbers)`,
     timestamp: "7:44 AM",
     tags: [
       {
-        label: "DSA",
+        label: "Algorithm Expert",
         icon: "brain",
       },
     ],
@@ -127,23 +131,34 @@ print(numbers)`,
   },
 ];
 
-export class LocalMessageService
-  implements IMessageService
-{
+/* =========================================================
+   LOCAL MESSAGE SERVICE
+   ========================================================= */
+
+export class LocalMessageService implements IMessageService {
   private readonly messages: Message[];
 
   constructor() {
     this.messages = [...INITIAL_MESSAGES];
   }
 
+  /* =======================================================
+     GET CHANNEL MESSAGES
+     ======================================================= */
+
   async getMessages(
     channelId: string,
   ): Promise<Message[]> {
     return this.messages.filter(
       (message) =>
-        message.channelId === channelId,
+        message.channelId === channelId &&
+        !message.parentMessageId,
     );
   }
+
+  /* =======================================================
+     GET SINGLE MESSAGE
+     ======================================================= */
 
   async getMessage(
     messageId: string,
@@ -155,6 +170,10 @@ export class LocalMessageService
       ) ?? null
     );
   }
+
+  /* =======================================================
+     SEND MESSAGE
+     ======================================================= */
 
   async sendMessage(
     channelId: string,
