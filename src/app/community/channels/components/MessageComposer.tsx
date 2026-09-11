@@ -4,6 +4,7 @@ import {
   AtSign,
   Bold,
   Code2,
+  ChevronDown,
   ImagePlus,
   Italic,
   List,
@@ -61,6 +62,8 @@ export function MessageComposer({
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [codeMode, setCodeMode] = useState(false);
+  const [showLanguagePicker, setShowLanguagePicker] = useState(false);
+  const [codeLanguage, setCodeLanguage] = useState<string | null>(null);
   const [listMode, setListMode] = useState<
     "bullet" | "number" | null
   >(null);
@@ -252,17 +255,23 @@ export function MessageComposer({
   };
 
   const handleCodeToggle = () => {
-    setCodeMode((current) => {
-      const next = !current;
+    setShowLanguagePicker((current) => !current);
+  };
 
-      if (next && !content.trim()) {
-        setContent(
-          "```python\n\n```",
-        );
-      }
+  const handleLanguageSelect = (language: string) => {
+    setCodeLanguage(language);
+    setCodeMode(true);
+    setShowLanguagePicker(false);
 
-      return next;
+    requestAnimationFrame(() => {
+      textareaRef.current?.focus();
     });
+  };
+
+  const handleExitCodeMode = () => {
+    setCodeMode(false);
+    setCodeLanguage(null);
+    setShowLanguagePicker(false);
   };
 
   const handleMicrophone = () => {
@@ -412,8 +421,20 @@ export function MessageComposer({
           )}`
         : "";
 
+    const codePayload =
+      codeMode &&
+      codeLanguage &&
+      trimmedContent.length > 0
+        ? "```" +
+          codeLanguage +
+          "\n" +
+          content +
+          "\n```"
+        : "";
+
     const finalContent = [
-      trimmedContent,
+      codePayload,
+      codeMode ? "" : trimmedContent,
       attachmentPayload,
     ]
       .filter(Boolean)
@@ -428,6 +449,8 @@ export function MessageComposer({
       setContent("");
       setAttachments([]);
       setCodeMode(false);
+      setCodeLanguage(null);
+      setShowLanguagePicker(false);
       setListMode(null);
       setShowEmojiPicker(false);
     } finally {
@@ -560,7 +583,7 @@ export function MessageComposer({
             <div
               className="
                 flex
-                h-7
+                h-8
                 items-center
                 border-b
                 border-[#a88a45]/20
@@ -570,14 +593,12 @@ export function MessageComposer({
             >
               <Code2
                 size={11}
-                className="
-                  mr-1.5
-                  text-[#c6a966]
-                "
+                className="mr-1.5 text-[#c6a966]"
               />
 
               <span
                 className="
+                  mr-2
                   text-[8px]
                   font-semibold
                   uppercase
@@ -585,19 +606,66 @@ export function MessageComposer({
                   text-[#c6a966]/70
                 "
               >
-                Code mode
+                Code
               </span>
+
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setShowLanguagePicker(
+                      (current) => !current,
+                    )
+                  }
+                  disabled={disabled || sending}
+                  className="
+                    inline-flex
+                    h-6
+                    items-center
+                    gap-1
+                    rounded-md
+                    border
+                    border-[#a88a45]/20
+                    bg-black/[0.16]
+                    px-2
+                    text-[8px]
+                    font-medium
+                    text-[#d6bd82]/80
+                    transition
+                    hover:border-[#a88a45]/35
+                    hover:bg-[#a88a45]/[0.08]
+                    hover:text-[#e5d09b]
+                    disabled:cursor-not-allowed
+                    disabled:opacity-40
+                  "
+                >
+                  {codeLanguage ?? "Choose language"}
+                  <ChevronDown size={10} className="text-[#c6a966]/70" />
+                </button>
+
+                {showLanguagePicker && (
+                  <LanguagePicker
+                    selectedLanguage={codeLanguage}
+                    onSelect={handleLanguageSelect}
+                  />
+                )}
+              </div>
 
               <button
                 type="button"
-                onClick={
-                  handleCodeToggle
-                }
+                onClick={handleExitCodeMode}
+                disabled={disabled || sending}
                 className="
                   ml-auto
+                  rounded-md
+                  px-1.5
+                  py-1
                   text-[8px]
                   text-white/25
+                  transition
+                  hover:bg-white/[0.05]
                   hover:text-white/60
+                  disabled:opacity-40
                 "
               >
                 Exit
@@ -902,22 +970,32 @@ export function MessageComposer({
                 />
               </ComposerButton>
 
-              <ComposerButton
-                label={
-                  codeMode
-                    ? "Exit code mode"
-                    : "Code"
-                }
-                active={codeMode}
-                disabled={
-                  disabled || sending
-                }
-                onClick={
-                  handleCodeToggle
-                }
-              >
-                <Code2 size={13} />
-              </ComposerButton>
+              <div className="relative">
+                <ComposerButton
+                  label={
+                    codeMode
+                      ? "Choose code language"
+                      : "Code"
+                  }
+                  active={
+                    codeMode ||
+                    showLanguagePicker
+                  }
+                  disabled={
+                    disabled || sending
+                  }
+                  onClick={handleCodeToggle}
+                >
+                  <Code2 size={13} />
+                </ComposerButton>
+
+                {!codeMode && showLanguagePicker && (
+                  <LanguagePicker
+                    selectedLanguage={codeLanguage}
+                    onSelect={handleLanguageSelect}
+                  />
+                )}
+              </div>
             </div>
 
             <span
@@ -1000,6 +1078,132 @@ export function MessageComposer({
           )}
         </div>
       </form>
+    </div>
+  );
+}
+
+const CODE_LANGUAGES = [
+  { value: "python", label: "Python", short: "PY" },
+  { value: "javascript", label: "JavaScript", short: "JS" },
+  { value: "typescript", label: "TypeScript", short: "TS" },
+  { value: "jsx", label: "JSX", short: "JSX" },
+  { value: "tsx", label: "TSX", short: "TSX" },
+  { value: "java", label: "Java", short: "JAVA" },
+  { value: "c", label: "C", short: "C" },
+  { value: "cpp", label: "C++", short: "C++" },
+  { value: "csharp", label: "C#", short: "C#" },
+  { value: "rust", label: "Rust", short: "RS" },
+  { value: "go", label: "Go", short: "GO" },
+  { value: "sql", label: "SQL", short: "SQL" },
+  { value: "html", label: "HTML", short: "HTML" },
+  { value: "css", label: "CSS", short: "CSS" },
+  { value: "bash", label: "Bash", short: "SH" },
+  { value: "json", label: "JSON", short: "JSON" },
+] as const;
+
+interface LanguagePickerProps {
+  selectedLanguage: string | null;
+  onSelect: (language: string) => void;
+}
+
+function LanguagePicker({
+  selectedLanguage,
+  onSelect,
+}: LanguagePickerProps) {
+  return (
+    <div
+      className="
+        absolute
+        bottom-[calc(100%+6px)]
+        left-0
+        z-[250]
+        w-[210px]
+        overflow-hidden
+        rounded-xl
+        border
+        border-white/[0.09]
+        bg-[#0c1118]/[0.98]
+        p-1
+        shadow-[0_18px_50px_rgba(0,0,0,0.55)]
+        backdrop-blur-2xl
+      "
+    >
+      <div className="px-2.5 py-2">
+        <p className="text-[8px] font-semibold uppercase tracking-[0.12em] text-white/30">
+          Choose language
+        </p>
+        <p className="mt-0.5 text-[8px] text-white/15">
+          Your code will be sent as this exact language.
+        </p>
+      </div>
+
+      <div className="max-h-[280px] overflow-y-auto"
+        style={{
+          scrollbarWidth: "thin",
+          scrollbarColor: "rgba(198, 169, 102, 0.42) transparent",
+        }}>
+        {CODE_LANGUAGES.map((language) => {
+          const selected = selectedLanguage === language.value;
+
+          return (
+            <button
+              key={language.value}
+              type="button"
+              onClick={() => onSelect(language.value)}
+              className={`
+                flex
+                w-full
+                items-center
+                gap-2
+                rounded-lg
+                px-2
+                py-1.5
+                text-left
+                transition
+                ${
+                  selected
+                    ? "bg-[#a88a45]/[0.10] text-[#d8bf83]"
+                    : "text-white/45 hover:bg-white/[0.055] hover:text-white/75"
+                }
+              `}
+            >
+              <span
+                className={`
+                  flex
+                  h-6
+                  min-w-6
+                  items-center
+                  justify-center
+                  rounded-md
+                  border
+                  px-1
+                  font-mono
+                  text-[7px]
+                  font-semibold
+                  ${
+                    selected
+                      ? "border-[#a88a45]/30 bg-[#a88a45]/[0.10] text-[#d8bf83]"
+                      : "border-white/[0.07] bg-white/[0.025] text-white/30"
+                  }
+                `}
+              >
+                {language.short}
+              </span>
+
+              <span className="text-[9px] font-medium">
+                {language.label}
+              </span>
+
+              {selected && (
+                <span className="ml-auto text-[9px] text-[#c6a966]">
+                  ✓
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
     </div>
   );
 }

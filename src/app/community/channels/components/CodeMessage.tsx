@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import {
   Check,
@@ -14,6 +14,7 @@ import {
 import { useMemo, useState } from "react";
 
 import type { CodeBlock } from "../types/message";
+import { executionService } from "../services/execution/ExecutionService";
 
 interface CodeMessageProps {
   code: CodeBlock;
@@ -21,9 +22,13 @@ interface CodeMessageProps {
 
 type PlaygroundTab = "terminal" | "logs";
 
-export function CodeMessage({
-  code,
-}: CodeMessageProps) {
+type Suggestion = {
+  value: string;
+  detail: string;
+  kind: string;
+};
+
+export function CodeMessage({ code }: CodeMessageProps) {
   const [copied, setCopied] = useState(false);
   const [isPlaygroundOpen, setIsPlaygroundOpen] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
@@ -31,7 +36,6 @@ export function CodeMessage({
     useState<PlaygroundTab>("terminal");
 
   const [editorCode, setEditorCode] = useState(code.code);
-
   const [runOutput, setRunOutput] = useState("");
   const [runExitCode, setRunExitCode] = useState<number | null>(null);
   const [hasRun, setHasRun] = useState(false);
@@ -39,17 +43,15 @@ export function CodeMessage({
   const [editorFocused, setEditorFocused] = useState(false);
   const [suggestionIndex, setSuggestionIndex] = useState(0);
 
-  type Suggestion = {
-    value: string;
-    detail: string;
-    kind: string;
-  };
-
   const suggestions = useMemo<Suggestion[]>(() => {
     const language = code.language.toLowerCase();
     const currentLine = editorCode.split("\n").pop() ?? "";
     const trimmed = currentLine.trimStart();
-    const match = trimmed.match(/([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)?\.?)$/);
+
+    const match = trimmed.match(
+      /([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)?\.?)$/,
+    );
+
     const token = match?.[1]?.toLowerCase() ?? "";
 
     const python: Suggestion[] = [
@@ -112,120 +114,58 @@ export function CodeMessage({
       pool = sql;
     }
 
-    if (!token) return [];
+    if (!token) {
+      return [];
+    }
 
     const query = token.split(".").pop() ?? token;
+
     return pool
       .filter((item) => {
         const candidate = item.value.toLowerCase();
-        return candidate.startsWith(query) || candidate.includes(query);
+
+        return (
+          candidate.startsWith(query) ||
+          candidate.includes(query)
+        );
       })
       .slice(0, 6);
   }, [code.language, editorCode]);
 
   const activeSuggestions = editorFocused ? suggestions : [];
 
+  const resetRunState = () => {
+    setHasRun(false);
+    setRunOutput("");
+    setRunExitCode(null);
+  };
+
   const insertSuggestion = (suggestion: Suggestion) => {
     setEditorCode((current) => {
       const lines = current.split("\n");
-      const last = lines.length - 1;
-      const line = lines[last] ?? "";
-      const match = line.match(/^(.*?)([A-Za-z_][A-Za-z0-9_]*)$/);
+      const lastIndex = lines.length - 1;
+      const line = lines[lastIndex] ?? "";
+
+      const match = line.match(
+        /^(.*?)([A-Za-z_][A-Za-z0-9_]*)$/,
+      );
 
       if (!match) {
-        lines[last] = `${line}${suggestion.value}`;
+        lines[lastIndex] = `${line}${suggestion.value}`;
       } else {
-        lines[last] = `${match[1]}${suggestion.value}`;
+        lines[lastIndex] = `${match[1]}${suggestion.value}`;
       }
 
       return lines.join("\n");
     });
 
-    setHasRun(false);
-    setRunOutput("");
-    setRunExitCode(null);
+    resetRunState();
     setSuggestionIndex(0);
-  };
-
-  const evaluateSimpleCode = (source: string) => {
-    const language = code.language.toLowerCase();
-    const trimmed = source.trim();
-
-    if (!trimmed) {
-      return { output: "", exitCode: 0 };
-    }
-
-    if (language === "python" || language === "py") {
-      const variables = new Map<string, string>();
-      const output: string[] = [];
-
-      for (const rawLine of source.split("\n")) {
-        const line = rawLine.trim();
-        if (!line || line.startsWith("#")) continue;
-
-        const assignment = line.match(/^([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.+)$/);
-        if (assignment) {
-          variables.set(assignment[1], assignment[2]);
-          continue;
-        }
-
-        const printMatch = line.match(/^print\((.*)\)\s*$/);
-        if (printMatch) {
-          let value = printMatch[1].trim();
-          if (variables.has(value)) value = variables.get(value)!;
-          value = value.replace(/^(["'])(.*)\1$/, "$2");
-          value = value.replace(/\[([^\]]*)\]/g, (_m, inner: string) => `[${inner}]`);
-          output.push(value);
-          continue;
-        }
-
-        const appendMatch = line.match(/^([A-Za-z_][A-Za-z0-9_]*)\.append\((.*)\)$/);
-        if (appendMatch && variables.has(appendMatch[1])) {
-          const current = variables.get(appendMatch[1])!;
-          const inner = current.replace(/^\[(.*)\]$/, "$1");
-          variables.set(appendMatch[1], `[${inner}${inner ? ", " : ""}${appendMatch[2]}]`);
-          continue;
-        }
-
-        return {
-          output: `Unsupported local Python statement: ${line}`,
-          exitCode: 1,
-        };
-      }
-
-      return { output: output.join("\n"), exitCode: 0 };
-    }
-
-    if (language === "javascript" || language === "js" || language === "typescript" || language === "ts") {
-      const output: string[] = [];
-      for (const rawLine of source.split("\n")) {
-        const line = rawLine.trim();
-        if (!line || line.startsWith("//")) continue;
-        const logMatch = line.match(/^console\.(?:log|info)\((.*)\);?$/);
-        if (logMatch) {
-          output.push(logMatch[1].trim().replace(/^(["'])(.*)\1$/, "$2"));
-          continue;
-        }
-        return { output: `Unsupported local ${code.language} statement: ${line}`, exitCode: 1 };
-      }
-      return { output: output.join("\n"), exitCode: 0 };
-    }
-
-    if (language === "sql") {
-      const match = trimmed.match(/^SELECT\s+(["'])(.*?)\1\s*;?$/i);
-      if (match) return { output: match[2], exitCode: 0 };
-      const numberMatch = trimmed.match(/^SELECT\s+([0-9]+)\s*;?$/i);
-      if (numberMatch) return { output: numberMatch[1], exitCode: 0 };
-      return { output: "Local SQL runner supports simple SELECT literals only.", exitCode: 1 };
-    }
-
-    return { output: `No local runner is configured for ${code.language}.`, exitCode: 1 };
   };
 
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(editorCode);
-
       setCopied(true);
 
       window.setTimeout(() => {
@@ -237,38 +177,62 @@ export function CodeMessage({
   };
 
   const handleRun = async () => {
-    if (isRunning) return;
+    if (isRunning) {
+      return;
+    }
 
     setIsRunning(true);
     setActiveTab("terminal");
-    setHasRun(false);
-    setRunOutput("");
-    setRunExitCode(null);
+    resetRunState();
 
     const startedAt = new Date().toLocaleTimeString();
+
     setLogs((current) => [
       ...current,
       `[${startedAt}] Starting ${code.language} playground`,
     ]);
 
-    await new Promise((resolve) => window.setTimeout(resolve, 250));
+    try {
+      const result = await executionService.execute({
+        language: code.language,
+        source: editorCode,
+      });
 
-    const result = editorCode.trim() === code.code.trim() && code.output !== undefined
-      ? { output: code.output, exitCode: typeof code.exitCode === "number" ? code.exitCode : 0 }
-      : evaluateSimpleCode(editorCode);
+      setRunOutput(
+        result.output || "Program finished without output.",
+      );
 
-    setRunOutput(result.output || "Program finished without output.");
-    setRunExitCode(result.exitCode);
-    setHasRun(true);
+      setRunExitCode(result.exitCode);
+      setHasRun(true);
 
-    const finishedAt = new Date().toLocaleTimeString();
-    setLogs((current) => [
-      ...current,
-      `[${finishedAt}] Execution completed`,
-      `[${finishedAt}] Exit code: ${result.exitCode}`,
-    ]);
+      const finishedAt = new Date().toLocaleTimeString();
 
-    setIsRunning(false);
+      setLogs((current) => [
+        ...current,
+        `[${finishedAt}] Execution completed`,
+        `[${finishedAt}] Exit code: ${result.exitCode}`,
+      ]);
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Execution failed.";
+
+      const failedAt = new Date().toLocaleTimeString();
+
+      setRunOutput(message);
+      setRunExitCode(1);
+      setHasRun(true);
+
+      setLogs((current) => [
+        ...current,
+        `[${failedAt}] Execution failed`,
+        `[${failedAt}] ${message}`,
+        `[${failedAt}] Exit code: 1`,
+      ]);
+    } finally {
+      setIsRunning(false);
+    }
   };
 
   const handleClosePlayground = () => {
@@ -282,6 +246,7 @@ export function CodeMessage({
   return (
     <div
       className="
+        group
         relative
         mt-3
         overflow-visible
@@ -293,10 +258,6 @@ export function CodeMessage({
         backdrop-blur-2xl
       "
     >
-      {/* =========================================================
-          CODE HEADER
-          ========================================================= */}
-
       <div
         className="
           flex
@@ -341,8 +302,6 @@ export function CodeMessage({
         </div>
 
         <div className="flex items-center gap-1">
-          {/* Run */}
-
           <button
             type="button"
             onClick={handleRun}
@@ -364,15 +323,9 @@ export function CodeMessage({
               disabled:opacity-50
             "
           >
-            <Play
-              size={10}
-              fill="currentColor"
-            />
-
+            <Play size={10} fill="currentColor" />
             {isRunning ? "Running" : "Run"}
           </button>
-
-          {/* Playground */}
 
           <button
             type="button"
@@ -396,17 +349,13 @@ export function CodeMessage({
             ].join(" ")}
           >
             <Terminal size={10} />
-
             Playground
-
             {isPlaygroundOpen ? (
               <ChevronUp size={9} />
             ) : (
               <ChevronDown size={9} />
             )}
           </button>
-
-          {/* Copy */}
 
           <button
             type="button"
@@ -441,10 +390,6 @@ export function CodeMessage({
         </div>
       </div>
 
-      {/* =========================================================
-          CODE AREA
-          ========================================================= */}
-
       <div className="relative">
         <pre
           className="
@@ -458,8 +403,6 @@ export function CodeMessage({
         >
           <code>{editorCode}</code>
         </pre>
-
-        {/* Small playground trigger */}
 
         {!isPlaygroundOpen && (
           <button
@@ -493,17 +436,8 @@ export function CodeMessage({
         )}
       </div>
 
-      {/* =========================================================
-          ORIGINAL OUTPUT
-          ========================================================= */}
-
       {code.output && (
-        <div
-          className="
-            border-t
-            border-white/[0.07]
-          "
-        >
+        <div className="border-t border-white/[0.07]">
           <div
             className="
               px-4
@@ -533,299 +467,315 @@ export function CodeMessage({
         </div>
       )}
 
-      {/* =========================================================
-          EXIT STATUS
-          ========================================================= */}
-
       {typeof code.exitCode === "number" && (
-          <div
-            className="
-              flex
-              h-7
-              items-center
-              border-t
-              border-white/[0.06]
-              px-4
-            "
-          >
-            <span
-              className={[
-                "text-[8px] font-medium",
-                runExitCode === 0
-                  ? "text-[#71aa82]"
-                  : "text-[#c77b7b]",
-              ].join(" ")}
-            >
-              {code.exitCode === 0
-                ? "✓ Executed successfully"
-                : `✕ Process exited with code ${code.exitCode}`}
-            </span>
-          </div>
-        )}
-
-      {/* =========================================================
-          PLAYGROUND
-          ========================================================= */}
-
-      {isPlaygroundOpen && (
         <div
           className="
-            absolute
-            left-[28%]
-            right-[-1px]
-            top-[118px]
-            z-[80]
-            overflow-visible
-            rounded-xl
-            border
-            border-[#a88a45]/65
-            bg-[#17140d]/[0.98]
-            shadow-[0_24px_70px_rgba(0,0,0,.58)]
-            backdrop-blur-2xl
+            flex
+            h-7
+            items-center
+            border-t
+            border-white/[0.06]
+            px-4
           "
         >
-          {/* Playground header */}
-
-          <div
-            className="
-              flex
-              h-8
-              items-center
-              justify-between
-              border-b
-              border-white/[0.06]
-              bg-[#211c11]/[0.88]
-              px-3
-            "
+          <span
+            className={[
+              "text-[8px] font-medium",
+              code.exitCode === 0
+                ? "text-[#71aa82]"
+                : "text-[#c77b7b]",
+            ].join(" ")}
           >
-            <div className="flex items-center gap-2">
-              <Terminal
-                size={11}
-                className="text-white/40"
-              />
-
-              <span
-                className="
-                  text-[8px]
-                  font-semibold
-                  uppercase
-                  tracking-[0.13em]
-                  text-white/35
-                "
-              >
-                Harbor Playground
-              </span>
-            </div>
-
-            <button
-              type="button"
-              onClick={handleClosePlayground}
-              aria-label="Close playground"
-              className="
-                flex
-                h-5
-                w-5
-                items-center
-                justify-center
-                rounded-md
-                text-white/25
-                transition
-                hover:bg-white/[0.06]
-                hover:text-white/65
-              "
-            >
-              <X size={11} />
-            </button>
-          </div>
-
-          {/* Editor */}
-
-          <div className="relative min-h-[112px] bg-[#17140d]/[0.72]">
-            <div
-              className="
-                flex
-                h-7
-                items-center
-                justify-between
-                border-b
-                border-[#a88a45]/[0.28]
-                px-3
-              "
-            >
-              <span
-                className="
-                  text-[8px]
-                  font-semibold
-                  uppercase
-                  tracking-[0.12em]
-                  text-white/30
-                "
-              >
-                {code.language}
-              </span>
-
-              <button
-                type="button"
-                onClick={handleRun}
-                disabled={isRunning}
-                className="
-                  flex
-                  h-5
-                  items-center
-                  gap-1
-                  rounded-md
-                  bg-white/[0.06]
-                  px-2
-                  text-[8px]
-                  text-white/55
-                  transition
-                  hover:bg-white/[0.10]
-                  hover:text-white/85
-                  disabled:opacity-40
-                "
-              >
-                <Play
-                  size={8}
-                  fill="currentColor"
-                />
-
-                {isRunning
-                  ? "Running..."
-                  : "Run"}
-              </button>
-            </div>
-
-            <textarea
-              value={editorCode}
-              onChange={(event) => {
-                setEditorCode(event.target.value);
-                setHasRun(false);
-                setRunOutput("");
-                setRunExitCode(null);
-                setSuggestionIndex(0);
-              }}
-              onFocus={() => setEditorFocused(true)}
-              onBlur={() => window.setTimeout(() => setEditorFocused(false), 120)}
-              onKeyDown={(event) => {
-                if (activeSuggestions.length > 0 && event.key === "ArrowDown") {
-                  event.preventDefault();
-                  setSuggestionIndex((current) => (current + 1) % activeSuggestions.length);
-                } else if (activeSuggestions.length > 0 && event.key === "ArrowUp") {
-                  event.preventDefault();
-                  setSuggestionIndex((current) => (current - 1 + activeSuggestions.length) % activeSuggestions.length);
-                } else if (activeSuggestions.length > 0 && event.key === "Tab") {
-                  event.preventDefault();
-                  insertSuggestion(activeSuggestions[suggestionIndex]);
-                } else if (event.shiftKey && event.key === "Enter") {
-                  event.preventDefault();
-                  void handleRun();
-                }
-              }}
-              spellCheck={false}
-              aria-label="Code playground editor"
-              className="
-                block
-                min-h-[125px]
-                w-full
-                resize-y
-                border-0
-                bg-transparent
-                px-4
-                py-3
-                font-mono
-                text-[11px]
-                leading-[1.7]
-                text-[#e1d0a5]
-                outline-none
-                placeholder:text-[#cdbb8a]/30
-              "
-            />
-
-            {/* Contextual suggestions */}
-
-            {activeSuggestions.length > 0 && (
-              <div
-                className="
-                  absolute
-                  right-3
-                  top-10
-                  z-[110]
-                  w-60
-                  overflow-hidden
-                  rounded-lg
-                  border
-                  border-white/[0.10]
-                  bg-[#10151c]/96
-                  shadow-[0_18px_45px_rgba(0,0,0,.42)]
-                  backdrop-blur-xl
-                "
-              >
-                <div
-                  className="
-                    flex items-center justify-between
-                    border-b border-white/[0.06]
-                    px-2.5 py-1.5
-                    text-[7px] font-semibold uppercase tracking-[0.12em] text-white/25
-                  "
-                >
-                  <span>Suggestions</span>
-                  <span className="normal-case tracking-normal text-white/15">Tab to insert</span>
-                </div>
-
-                {activeSuggestions.map((suggestion, index) => (
-                  <button
-                    key={`${suggestion.value}-${suggestion.detail}`}
-                    type="button"
-                    onMouseDown={(event) => event.preventDefault()}
-                    onClick={() => insertSuggestion(suggestion)}
-                    className={[
-                      "flex w-full items-center gap-2 px-2.5 py-1.5 text-left font-mono text-[9px] transition",
-                      index === suggestionIndex
-                        ? "bg-[#123b55]/80 text-white/90"
-                        : "text-white/45 hover:bg-white/[0.06] hover:text-white/80",
-                    ].join(" ")}
-                  >
-                    <span className="w-4 text-center text-[8px] text-[#9d7bb8]/90">
-                      {suggestion.kind}
-                    </span>
-                    <span className="min-w-0 flex-1 truncate">{suggestion.value}</span>
-                    <span className="text-[8px] text-white/20">{suggestion.detail}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
+            {code.exitCode === 0
+              ? "✓ Executed successfully"
+              : `✕ Process exited with code ${code.exitCode}`}
+          </span>
         </div>
       )}
 
       {isPlaygroundOpen && (
         <>
-          {/* =========================================================
-              FLOATING TERMINAL / LOGS
-          This is intentionally a separate floating surface from
-          the Playground so the two panels can overlap freely.
-          ========================================================= */}
+          <div
+            className="
+              absolute
+              left-[28%]
+              right-[-1px]
+              top-[118px]
+              z-[80]
+              overflow-visible
+              rounded-xl
+              border
+              border-[#a88a45]/65
+              bg-[#17140d]/[0.98]
+              shadow-[0_24px_70px_rgba(0,0,0,.58)]
+              backdrop-blur-2xl
+            "
+          >
+            <div
+              className="
+                flex
+                h-8
+                items-center
+                justify-between
+                border-b
+                border-white/[0.06]
+                bg-[#211c11]/[0.88]
+                px-3
+              "
+            >
+              <div className="flex items-center gap-2">
+                <Terminal size={11} className="text-white/40" />
 
-      <div
-        className="
-          absolute
-          left-[58%]
-          top-[222px]
-          z-[100]
-          w-[42%]
-          min-w-[300px]
-          overflow-hidden
-          rounded-xl
-          border
-          border-white/[0.12]
-          bg-[#050608]/[0.98]
-          shadow-[0_24px_60px_rgba(0,0,0,.68)]
-          backdrop-blur-2xl
-        "
-      >
-            {/* Tabs */}
+                <span
+                  className="
+                    text-[8px]
+                    font-semibold
+                    uppercase
+                    tracking-[0.13em]
+                    text-white/35
+                  "
+                >
+                  Harbor Playground
+                </span>
+              </div>
 
+              <button
+                type="button"
+                onClick={handleClosePlayground}
+                aria-label="Close playground"
+                className="
+                  flex
+                  h-5
+                  w-5
+                  items-center
+                  justify-center
+                  rounded-md
+                  text-white/25
+                  transition
+                  hover:bg-white/[0.06]
+                  hover:text-white/65
+                "
+              >
+                <X size={11} />
+              </button>
+            </div>
+
+            <div className="relative min-h-[112px] bg-[#17140d]/[0.72]">
+              <div
+                className="
+                  flex
+                  h-7
+                  items-center
+                  justify-between
+                  border-b
+                  border-[#a88a45]/[0.28]
+                  px-3
+                "
+              >
+                <span
+                  className="
+                    text-[8px]
+                    font-semibold
+                    uppercase
+                    tracking-[0.12em]
+                    text-white/30
+                  "
+                >
+                  {code.language}
+                </span>
+
+                <button
+                  type="button"
+                  onClick={handleRun}
+                  disabled={isRunning}
+                  className="
+                    flex
+                    h-5
+                    items-center
+                    gap-1
+                    rounded-md
+                    bg-white/[0.06]
+                    px-2
+                    text-[8px]
+                    text-white/55
+                    transition
+                    hover:bg-white/[0.10]
+                    hover:text-white/85
+                    disabled:opacity-40
+                  "
+                >
+                  <Play size={8} fill="currentColor" />
+                  {isRunning ? "Running..." : "Run"}
+                </button>
+              </div>
+
+              <textarea
+                value={editorCode}
+                onChange={(event) => {
+                  setEditorCode(event.target.value);
+                  resetRunState();
+                  setSuggestionIndex(0);
+                }}
+                onFocus={() => setEditorFocused(true)}
+                onBlur={() =>
+                  window.setTimeout(
+                    () => setEditorFocused(false),
+                    120,
+                  )
+                }
+                onKeyDown={(event) => {
+                  if (
+                    activeSuggestions.length > 0 &&
+                    event.key === "ArrowDown"
+                  ) {
+                    event.preventDefault();
+
+                    setSuggestionIndex(
+                      (current) =>
+                        (current + 1) %
+                        activeSuggestions.length,
+                    );
+                  } else if (
+                    activeSuggestions.length > 0 &&
+                    event.key === "ArrowUp"
+                  ) {
+                    event.preventDefault();
+
+                    setSuggestionIndex(
+                      (current) =>
+                        (current - 1 + activeSuggestions.length) %
+                        activeSuggestions.length,
+                    );
+                  } else if (
+                    activeSuggestions.length > 0 &&
+                    event.key === "Tab"
+                  ) {
+                    event.preventDefault();
+
+                    const suggestion =
+                      activeSuggestions[suggestionIndex];
+
+                    if (suggestion) {
+                      insertSuggestion(suggestion);
+                    }
+                  } else if (
+                    event.shiftKey &&
+                    event.key === "Enter"
+                  ) {
+                    event.preventDefault();
+                    void handleRun();
+                  }
+                }}
+                spellCheck={false}
+                aria-label="Code playground editor"
+                className="
+                  block
+                  min-h-[125px]
+                  w-full
+                  resize-y
+                  border-0
+                  bg-transparent
+                  px-4
+                  py-3
+                  font-mono
+                  text-[11px]
+                  leading-[1.7]
+                  text-[#e1d0a5]
+                  outline-none
+                  placeholder:text-[#cdbb8a]/30
+                "
+              />
+
+              {activeSuggestions.length > 0 && (
+                <div
+                  className="
+                    absolute
+                    right-3
+                    top-10
+                    z-[110]
+                    w-60
+                    overflow-hidden
+                    rounded-lg
+                    border
+                    border-white/[0.10]
+                    bg-[#10151c]/96
+                    shadow-[0_18px_45px_rgba(0,0,0,.42)]
+                    backdrop-blur-xl
+                  "
+                >
+                  <div
+                    className="
+                      flex
+                      items-center
+                      justify-between
+                      border-b
+                      border-white/[0.06]
+                      px-2.5
+                      py-1.5
+                      text-[7px]
+                      font-semibold
+                      uppercase
+                      tracking-[0.12em]
+                      text-white/25
+                    "
+                  >
+                    <span>Suggestions</span>
+
+                    <span className="normal-case tracking-normal text-white/15">
+                      Tab to insert
+                    </span>
+                  </div>
+
+                  {activeSuggestions.map((suggestion, index) => (
+                    <button
+                      key={`${suggestion.value}-${suggestion.detail}`}
+                      type="button"
+                      onMouseDown={(event) =>
+                        event.preventDefault()
+                      }
+                      onClick={() => insertSuggestion(suggestion)}
+                      className={[
+                        "flex w-full items-center gap-2 px-2.5 py-1.5 text-left font-mono text-[9px] transition",
+                        index === suggestionIndex
+                          ? "bg-[#123b55]/80 text-white/90"
+                          : "text-white/45 hover:bg-white/[0.06] hover:text-white/80",
+                      ].join(" ")}
+                    >
+                      <span className="w-4 text-center text-[8px] text-[#9d7bb8]/90">
+                        {suggestion.kind}
+                      </span>
+
+                      <span className="min-w-0 flex-1 truncate">
+                        {suggestion.value}
+                      </span>
+
+                      <span className="text-[8px] text-white/20">
+                        {suggestion.detail}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div
+            className="
+              absolute
+              left-[58%]
+              top-[222px]
+              z-[100]
+              w-[42%]
+              min-w-[300px]
+              overflow-hidden
+              rounded-xl
+              border
+              border-white/[0.12]
+              bg-[#050608]/[0.98]
+              shadow-[0_24px_60px_rgba(0,0,0,.68)]
+              backdrop-blur-2xl
+            "
+          >
             <div
               className="
                 flex
@@ -840,9 +790,7 @@ export function CodeMessage({
               <div className="flex items-center">
                 <button
                   type="button"
-                  onClick={() =>
-                    setActiveTab("terminal")
-                  }
+                  onClick={() => setActiveTab("terminal")}
                   className={[
                     `
                       flex
@@ -866,9 +814,7 @@ export function CodeMessage({
 
                 <button
                   type="button"
-                  onClick={() =>
-                    setActiveTab("logs")
-                  }
+                  onClick={() => setActiveTab("logs")}
                   className={[
                     `
                       flex
@@ -892,6 +838,10 @@ export function CodeMessage({
                 <button
                   type="button"
                   aria-label="New terminal"
+                  onClick={() => {
+                    setActiveTab("terminal");
+                    resetRunState();
+                  }}
                   className="
                     ml-1
                     flex
@@ -923,8 +873,6 @@ export function CodeMessage({
               </span>
             </div>
 
-            {/* Terminal */}
-
             {activeTab === "terminal" && (
               <div
                 className="
@@ -937,10 +885,14 @@ export function CodeMessage({
                   leading-[1.7]
                 "
               >
-                {hasRun ? (
+                {isRunning ? (
+                  <div className="text-[#e1d0a5]/70">
+                    Running {code.language}...
+                  </div>
+                ) : hasRun ? (
                   <>
                     <div className="whitespace-pre-wrap text-white/55">
-                      {runOutput}
+                      {runOutput || "Program finished without output."}
                     </div>
 
                     <div
@@ -951,7 +903,7 @@ export function CodeMessage({
                           : "text-[#c77b7b]/80",
                       ].join(" ")}
                     >
-                      Exit Code: {runExitCode ?? 0}
+                      Exit Code: {runExitCode ?? 1}
                     </div>
                   </>
                 ) : (
@@ -965,16 +917,12 @@ export function CodeMessage({
                     hackersharbor
                   </span>
 
-                  <span className="text-white/15">
-                    $
-                  </span>
+                  <span className="text-white/15">$</span>
 
                   <span className="h-3 w-px animate-pulse bg-white/45" />
                 </div>
               </div>
             )}
-
-            {/* Logs */}
 
             {activeTab === "logs" && (
               <div
@@ -1006,37 +954,32 @@ export function CodeMessage({
             )}
           </div>
 
-          {/* Playground footer stays visually attached to the Playground only. */}
-      <div
-        className="
-          absolute
-          left-[28%]
-          right-[-1px]
-          top-[290px]
-          z-[81]
-          flex
-          h-7
-          items-center
-          justify-between
-          rounded-b-xl
-          border-x
-          border-b
-          border-[#a88a45]/[0.22]
-          bg-[#211c11]/[0.90]
-          px-3
-          text-[7px]
-          text-white/20
-        "
-      >
-        <span>Shift + Enter to run</span>
-        <span>Harbor Playground</span>
+          <div
+            className="
+              absolute
+              left-[28%]
+              right-[-1px]
+              top-[290px]
+              z-[81]
+              flex
+              h-7
+              items-center
+              justify-between
+              rounded-b-xl
+              border-x
+              border-b
+              border-[#a88a45]/[0.22]
+              bg-[#211c11]/[0.90]
+              px-3
+              text-[7px]
+              text-white/20
+            "
+          >
+            <span>Shift + Enter to run</span>
+            <span>Harbor Playground</span>
           </div>
         </>
       )}
-
-      {/* =========================================================
-          EXIT STATUS WHEN PLAYGROUND IS OPEN
-          ========================================================= */}
 
       {isPlaygroundOpen &&
         hasRun &&
@@ -1055,7 +998,7 @@ export function CodeMessage({
             <span
               className={[
                 "text-[8px] font-medium",
-                code.exitCode === 0
+                runExitCode === 0
                   ? "text-[#71aa82]"
                   : "text-[#c77b7b]",
               ].join(" ")}

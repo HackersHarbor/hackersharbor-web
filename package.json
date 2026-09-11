@@ -15,9 +15,11 @@
     "lucide-react": "^1.31.0",
     "next": "16.3.0",
     "plotly.js": "^3.7.0",
+    "pyodide": "^314.0.6",
     "react": "19.2.8",
     "react-dom": "19.2.8",
-    "react-plotly.js": "^4.1.0"
+    "react-plotly.js": "^4.1.0",
+    "sql.js": "^1.14.2"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -25,10 +27,12 @@
     "@types/plotly.js": "^3.0.13",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/sql.js": "^1.4.11",
     "eslint": "^9",
     "eslint-config-next": "16.3.0",
     "sharp": "^0.35.3",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "tsx": "^4.23.13",
+    "typescript": "^5.9.3"
   }
 }
