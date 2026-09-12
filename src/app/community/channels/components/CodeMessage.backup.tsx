@@ -40,7 +40,6 @@ export function CodeMessage({ code }: CodeMessageProps) {
 
   const [editorCode, setEditorCode] = useState(code.code);
   const [runOutput, setRunOutput] = useState("");
-  const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   const [runExitCode, setRunExitCode] = useState<number | null>(null);
   const [hasRun, setHasRun] = useState(false);
   const [logs, setLogs] = useState<string[]>([]);
@@ -142,7 +141,6 @@ export function CodeMessage({ code }: CodeMessageProps) {
     setHasRun(false);
     setRunOutput("");
     setRunExitCode(null);
-    setPreviewHtml(null);
   };
 
   const insertSuggestion = (suggestion: Suggestion) => {
@@ -260,15 +258,11 @@ export function CodeMessage({ code }: CodeMessageProps) {
         source: editorCode,
       });
 
-      console.log("HTML execution result:", result);
-
-      setRunOutput(result.output || "");
+      setRunOutput(
+        result.output || "Program finished without output.",
+      );
 
       setRunExitCode(result.exitCode);
-      setPreviewHtml(
-        result.previewHtml ??
-          (code.language === "html" ? editorCode : null),
-      );
       setHasRun(true);
 
       const finishedAt = new Date().toLocaleTimeString();
@@ -957,17 +951,18 @@ export function CodeMessage({ code }: CodeMessageProps) {
                   </div>
                 ) : hasRun ? (
                   <>
-                    {previewHtml && (
-                      <div className="mb-3 overflow-hidden rounded-lg border border-white/[0.10] bg-white">
-                        <div className="border-b border-black/10 bg-[#181818] px-3 py-2 text-[8px] font-semibold uppercase tracking-[0.12em] text-white/60">
-                          HTML Preview
-                        </div>
-                        <iframe title="HTML code preview" srcDoc={previewHtml} sandbox="allow-scripts" className="block min-h-[260px] w-full border-0 bg-white" />
-                      </div>
-                    )}
-                    {runOutput && <div className="whitespace-pre-wrap text-white/55">{runOutput}</div>}
-                    {!previewHtml && !runOutput && <div className="whitespace-pre-wrap text-white/55">Program finished without output.</div>}
-                    <div className={["mt-1", runExitCode === 0 ? "text-[#71aa82]/80" : "text-[#c77b7b]/80"].join(" ")}>
+                    <div className="whitespace-pre-wrap text-white/55">
+                      {runOutput || "Program finished without output."}
+                    </div>
+
+                    <div
+                      className={[
+                        "mt-1",
+                        runExitCode === 0
+                          ? "text-[#71aa82]/80"
+                          : "text-[#c77b7b]/80",
+                      ].join(" ")}
+                    >
                       Exit Code: {runExitCode ?? 1}
                     </div>
                   </>

@@ -1,27 +1,49 @@
-﻿export const LANGUAGE_ALIASES: Record<string, string> = {
+﻿export type SupportedLanguage =
+  | "python"
+  | "javascript"
+  | "typescript"
+  | "html"
+  | "css"
+  | "json"
+  | "sql"
+  | "java"
+  | "c"
+  | "cpp";
+
+const aliases: Record<string, SupportedLanguage> = {
+  py: "python",
+  python: "python",
+
   js: "javascript",
-  jsx: "javascript",
+  javascript: "javascript",
 
   ts: "typescript",
-  tsx: "typescript",
+  typescript: "typescript",
 
-  py: "python",
+  html: "html",
+  htm: "html",
 
-  sh: "bash",
-  shell: "bash",
+  css: "css",
 
+  json: "json",
+
+  sql: "sql",
+
+  java: "java",
+
+  c: "c",
+  h: "c",
+
+  cpp: "cpp",
   "c++": "cpp",
-  cc: "cpp",
-  hpp: "cpp",
-
-  cs: "csharp",
-  "c#": "csharp",
-
-  yml: "yaml",
+  cxx: "cpp",
+  "c plus plus": "cpp",
 };
 
-export function normalizeLanguage(language: string): string {
+export function normalizeLanguage(
+  language: string,
+): SupportedLanguage {
   const normalized = language.trim().toLowerCase();
 
-  return LANGUAGE_ALIASES[normalized] ?? normalized;
+  return aliases[normalized] ?? "javascript";
 }

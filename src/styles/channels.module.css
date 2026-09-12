@@ -1,0 +1,26 @@
+.htmlPreview {
+    margin-bottom: 16px;
+    overflow: hidden;
+    border: 1px solid #2a2a2a;
+    border-radius: 10px;
+    background: #ffffff;
+  }
+  
+  .previewHeader {
+    padding: 10px 14px;
+    color: #d4d4d4;
+    background: #181818;
+    border-bottom: 1px solid #2a2a2a;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  
+  .previewFrame {
+    display: block;
+    width: 100%;
+    min-height: 320px;
+    border: 0;
+    background: #ffffff;
+  }

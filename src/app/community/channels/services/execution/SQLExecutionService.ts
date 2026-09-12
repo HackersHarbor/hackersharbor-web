@@ -1,239 +1,119 @@
-import type {
-  ExecutionRequest,
-  ExecutionResult,
-} from "./ExecutionTypes";
+import * as duckdb from "@duckdb/duckdb-wasm";
+import * as arrow from "apache-arrow";
 
-type SqlValue = string | number | null | Uint8Array;
-
-type SqlQueryResult = {
-  columns: string[];
-  values: SqlValue[][];
+export type SQLColumn = {
+  name: string;
+  type: string;
 };
 
-type SqlDatabase = {
-  exec: (sql: string) => SqlQueryResult[];
-  close?: () => void;
+export type SQLResult = {
+  columns: SQLColumn[];
+  rows: unknown[][];
+  rowCount: number;
+  changes: number;
 };
-
-type SqlJsModule = {
-  Database: new () => SqlDatabase;
-};
-
-type SqlJsInitializer = (config: {
-  locateFile: (file: string) => string;
-}) => Promise<SqlJsModule>;
-
-type FormattedRow = Record<string, string>;
 
 export class SQLExecutionService {
-  async execute(
-    request: ExecutionRequest,
-  ): Promise<ExecutionResult> {
-    const startedAt = Date.now();
+  private db: duckdb.AsyncDuckDB | null = null;
+  private connection: duckdb.AsyncDuckDBConnection | null = null;
+  private initialized = false;
 
-    try {
-      const sql = this.normalizeSql(request.source);
+  async initialize(): Promise<void> {
+    if (this.initialized && this.db && this.connection) {
+      return;
+    }
 
-      if (!sql.trim()) {
-        return {
-          output: "No SQL query provided.",
-          exitCode: 1,
-          durationMs: Date.now() - startedAt,
-          mode: "runtime",
-          error: "No SQL query provided.",
-        };
-      }
+    const bundles = duckdb.getJsDelivrBundles();
 
-      const database = await this.createDatabase();
+    const bundle = await duckdb.selectBundle(bundles);
 
-      try {
-        const results = database.exec(sql);
+    if (!bundle.mainWorker || !bundle.mainModule) {
+      throw new Error("DuckDB-WASM bundle could not be loaded.");
+    }
 
-        return {
-          output: this.formatResults(results),
-          exitCode: 0,
-          durationMs: Date.now() - startedAt,
-          mode: "runtime",
-        };
-      } finally {
-        database.close?.();
-      }
-    } catch (error) {
-      const message = this.getErrorMessage(error);
+    const workerUrl = URL.createObjectURL(
+      new Blob([`importScripts("${bundle.mainWorker}");`], {
+        type: "text/javascript",
+      }),
+    );
 
+    const worker = new Worker(workerUrl);
+
+    this.db = new duckdb.AsyncDuckDB(
+      new duckdb.ConsoleLogger(),
+      worker,
+    );
+
+    await this.db.instantiate(bundle.mainModule);
+
+    this.connection = await this.db.connect();
+    this.initialized = true;
+
+    URL.revokeObjectURL(workerUrl);
+  }
+
+  async execute(sql: string): Promise<SQLResult> {
+    await this.initialize();
+
+    if (!this.connection) {
+      throw new Error("DuckDB connection is not initialized.");
+    }
+
+    const trimmedSql = sql.trim();
+
+    if (!trimmedSql) {
       return {
-        output: message,
-        exitCode: 1,
-        durationMs: Date.now() - startedAt,
-        mode: "runtime",
-        error: message,
+        columns: [],
+        rows: [],
+        rowCount: 0,
+        changes: 0,
       };
     }
+
+    const result = await this.connection.query(trimmedSql);
+
+    const columns = result.schema.fields.map((field) => ({
+      name: field.name,
+      type: field.type.toString(),
+    }));
+
+    const rows: unknown[][] = [];
+
+    for (let index = 0; index < result.numRows; index += 1) {
+      const row: unknown[] = [];
+
+      for (const field of result.schema.fields) {
+        const column = result.getChild(field.name);
+
+        row.push(column?.get(index) ?? null);
+      }
+
+      rows.push(row);
+    }
+
+    return {
+      columns,
+      rows,
+      rowCount: rows.length,
+      changes: 0,
+    };
   }
 
-  private async createDatabase(): Promise<SqlDatabase> {
-    const wasmPath = process.cwd() + "/public/sql-wasm/sql-wasm.wasm";
-
-    if (!existsSync(wasmPath)) {
-      throw new Error(
-        [
-          "SQL WASM file was not found.",
-          `Expected location: ${wasmPath}`,
-          "Create public/sql-wasm/sql-wasm.wasm before running SQL.",
-        ].join("\n"),
-      );
+  async reset(): Promise<void> {
+    if (this.connection) {
+      await this.connection.close();
     }
 
-    console.log("Using SQL WASM:", wasmPath);
+    if (this.db) {
+      await this.db.terminate();
+    }
 
-    const initSqlJs = await this.loadSqlJs();
-
-    const sqlJs = await initSqlJs({
-      locateFile: () => "/sql-wasm/sql-wasm.wasm",
-    });
-
-    return new sqlJs.Database();
+    this.connection = null;
+    this.db = null;
+    this.initialized = false;
   }
 
-  private async loadSqlJs(): Promise<SqlJsInitializer> {
-    const module = await import("sql.js");
-
-    return module.default as unknown as SqlJsInitializer;
-  }
-
-  private normalizeSql(source: string): string {
-    return source
-      .replace(/<br\s*\/?>/gi, "\n")
-      .replace(/<\/div>/gi, "\n")
-      .replace(/<div[^>]*>/gi, "")
-      .replace(/<\/p>/gi, "\n")
-      .replace(/<p[^>]*>/gi, "")
-      .replace(/&nbsp;/gi, " ")
-      .replace(/&amp;/gi, "&")
-      .replace(/&lt;/gi, "<")
-      .replace(/&gt;/gi, ">")
-      .replace(/&#39;/gi, "'")
-      .replace(/&quot;/gi, '"')
-      .replace(/<[^>]*>/g, "")
-      .replace(/\u00a0/g, " ")
-      .replace(/\r\n/g, "\n")
-      .replace(/\r/g, "\n")
-      .trim();
-  }
-
-  private formatResults(
-    results: SqlQueryResult[],
-  ): string {
-    if (!results.length) {
-      return "Query executed successfully.";
-    }
-
-    return results
-      .map((result, resultIndex) => {
-        if (!result.columns.length) {
-          return `Statement ${resultIndex + 1} executed successfully.`;
-        }
-
-        const rows: FormattedRow[] = result.values.map(
-          (values) => {
-            const row: FormattedRow = {};
-
-            result.columns.forEach((column, columnIndex) => {
-              row[column] = this.formatValue(
-                values[columnIndex],
-              );
-            });
-
-            return row;
-          },
-        );
-
-        return [
-          `Result ${resultIndex + 1}`,
-          this.formatTable(result.columns, rows),
-        ].join("\n");
-      })
-      .join("\n\n");
-  }
-
-  private formatTable(
-    columns: string[],
-    rows: FormattedRow[],
-  ): string {
-    if (!rows.length) {
-      return "No rows returned.";
-    }
-
-    const widths = columns.map((column) => {
-      const values = rows.map(
-        (row) => row[column] ?? "NULL",
-      );
-
-      return Math.max(
-        column.length,
-        ...values.map((value) => value.length),
-      );
-    });
-
-    const header = columns
-      .map((column, index) => {
-        return ` ${column.padEnd(widths[index])} `;
-      })
-      .join("|");
-
-    const separator = widths
-      .map((width) => "-".repeat(width + 2))
-      .join("+");
-
-    const body = rows
-      .map((row) => {
-        return columns
-          .map((column, index) => {
-            const value = row[column] ?? "NULL";
-
-            return ` ${value.padEnd(widths[index])} `;
-          })
-          .join("|");
-      })
-      .join("\n");
-
-    return [
-      header,
-      separator,
-      body,
-      "",
-      `${rows.length} row(s) returned.`,
-    ].join("\n");
-  }
-
-  private formatValue(value: SqlValue): string {
-    if (value === null || value === undefined) {
-      return "NULL";
-    }
-
-    if (value instanceof Uint8Array) {
-      return `[Binary data: ${value.length} bytes]`;
-    }
-
-    return String(value);
-  }
-
-  private getErrorMessage(error: unknown): string {
-    if (error instanceof Error) {
-      return error.message;
-    }
-
-    if (typeof error === "string") {
-      return error;
-    }
-
-    try {
-      return JSON.stringify(error);
-    } catch {
-      return "SQL execution failed.";
-    }
+  async close(): Promise<void> {
+    await this.reset();
   }
 }
-
-
-

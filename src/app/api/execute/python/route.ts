@@ -1,13 +1,14 @@
 ﻿import { NextResponse } from "next/server";
 
 import { normalizeLanguage } from "@/app/community/channels/services/execution/LanguageRegistry";
+
 import { PythonExecutionService } from "@/app/community/channels/services/execution/PythonExecutionService";
 import { JavaScriptExecutionService } from "@/app/community/channels/services/execution/JavaScriptExecutionService";
 import { TypeScriptExecutionService } from "@/app/community/channels/services/execution/TypeScriptExecutionService";
 import { HtmlExecutionService } from "@/app/community/channels/services/execution/HtmlExecutionService";
 import { CssExecutionService } from "@/app/community/channels/services/execution/CssExecutionService";
 import { JsonExecutionService } from "@/app/community/channels/services/execution/JsonExecutionService";
-import { SqlExecutionService } from "@/app/community/channels/services/execution/SqlExecutionService";
+import { SQLExecutionService } from "@/app/community/channels/services/execution/SQLExecutionService";
 
 export async function POST(request: Request) {
   try {
@@ -45,7 +46,7 @@ export async function POST(request: Request) {
       html: new HtmlExecutionService(),
       css: new CssExecutionService(),
       json: new JsonExecutionService(),
-      sql: new SqlExecutionService(),
+      sql: new SQLExecutionService(),
     };
 
     const service =
@@ -64,10 +65,14 @@ export async function POST(request: Request) {
 
     console.log("[execute] selected service:", language);
 
-    const result = await service.execute({
-      language,
-      source: body.source,
-    });
+    const result = await (
+      service as {
+        execute: (
+          language: string,
+          source: string,
+        ) => Promise<unknown>;
+      }
+    ).execute(language, body.source);
 
     console.log("[execute] result:", result);
 

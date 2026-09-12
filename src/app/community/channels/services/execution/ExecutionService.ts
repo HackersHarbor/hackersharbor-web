@@ -47,10 +47,10 @@ export class ExecutionService {
       }
 
       return {
-        output: result.output || "",
-        exitCode: result.exitCode ?? 0,
+        output: result.output ?? "",
+        exitCode: result.exitCode ?? 1,
         durationMs: result.durationMs,
-        mode: result.mode ?? "runtime",
+        mode: result.mode,
         error: result.error,
         previewHtml: result.previewHtml,
       };
