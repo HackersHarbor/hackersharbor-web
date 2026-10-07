@@ -44,8 +44,9 @@ export default function ChannelsPage() {
      THREAD STATE
      ======================================================= */
 
-  const [threadMessage, setThreadMessage] =
-    useState<Message | null>(null);
+  const [threadMessage, setThreadMessage] = useState<Message | null>(
+    null,
+  );
 
   /* =======================================================
      ACTIVE CHANNEL
@@ -54,8 +55,7 @@ export default function ChannelsPage() {
   const activeChannel = useMemo(() => {
     return (
       CHANNELS.find(
-        (channel) =>
-          channel.id === activeChannelId,
+        (channel) => channel.id === activeChannelId,
       ) ?? CHANNELS[0]
     );
   }, [activeChannelId]);
@@ -92,9 +92,7 @@ export default function ChannelsPage() {
      OPEN THREAD
      ======================================================= */
 
-  const handleOpenThread = (
-    message: Message,
-  ) => {
+  const handleOpenThread = (message: Message) => {
     setThreadMessage(message);
   };
 
@@ -110,9 +108,7 @@ export default function ChannelsPage() {
      SEND THREAD REPLY
      ======================================================= */
 
-  const handleSendReply = async (
-    content: string,
-  ) => {
+  const handleSendReply = async (content: string) => {
     await sendReply(content);
   };
 
@@ -136,21 +132,21 @@ export default function ChannelsPage() {
 
   return (
     <ChannelsShell
-      /* ===================================================
-         TOP NAVIGATION
-         =================================================== */
-
       topNavigation={
         <TopNavigation
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
+          onNotifications={() => {
+            // Reserved for notifications functionality.
+          }}
+          onSettings={() => {
+            // Reserved for settings functionality.
+          }}
+          onWorkspaceMenu={() => {
+            // Reserved for workspace menu functionality.
+          }}
         />
       }
-
-      /* ===================================================
-         SIDEBAR
-         =================================================== */
-
       sidebar={
         <ChannelSidebar
           channels={CHANNELS}
@@ -161,11 +157,6 @@ export default function ChannelsPage() {
           }}
         />
       }
-
-      /* ===================================================
-         MAIN CHANNEL
-         =================================================== */
-
       main={
         <MainChannel
           channel={activeChannel}
@@ -176,11 +167,6 @@ export default function ChannelsPage() {
           onReply={handleOpenThread}
         />
       }
-
-      /* ===================================================
-         THREAD
-         =================================================== */
-
       thread={
         threadMessage ? (
           <ThreadPanel
@@ -192,9 +178,7 @@ export default function ChannelsPage() {
             onClose={handleCloseThread}
             onSendReply={handleSendReply}
             onMore={() => {
-              /*
-               * Reserved for future thread actions.
-               */
+              // Reserved for future thread actions.
             }}
           />
         ) : undefined

@@ -40,7 +40,7 @@ export function TopNavigation({
         border-b
         border-white/[0.075]
         bg-[#0d1117]/[0.52]
-        px-5
+        px-7
         backdrop-blur-2xl
       "
     >
@@ -204,7 +204,7 @@ export function TopNavigation({
             className="
               flex
               h-9
-              w-[270px]
+              w-[220px]
               items-center
               gap-2.5
               rounded-xl
@@ -392,7 +392,7 @@ function NavigationItem({
       <button
         type="button"
         className={[
-          "relative flex h-10 items-center gap-1.5 rounded-xl px-4",
+          "relative flex h-10 items-center gap-1.5 rounded-xl px-3",
           "text-[12px] font-medium",
           "transition duration-200",
           active
