@@ -1,6 +1,7 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import Navigator from "@/components/navigator/Navigator";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -13,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "HackersHarbor — Navigate Your Coding Journey",
+  title: "HackersHarbor â€” Navigate Your Coding Journey",
   description: "Learn software engineering, practice coding challenges, build real projects and get hired. HackersHarbor is the all-in-one developer learning platform built in India.",
   keywords: "learn coding, software engineering, coding challenges, programming, Python, SQL, DSA, web development, India",
   icons: {
@@ -27,7 +28,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        {children}
+        <Navigator />
+      </body>
     </html>
   );
 }

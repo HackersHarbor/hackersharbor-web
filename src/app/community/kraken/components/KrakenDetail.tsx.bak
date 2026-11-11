@@ -1,0 +1,355 @@
+﻿"use client";
+
+import { useState } from "react";
+import ReactMarkdown from "react-markdown";
+
+import {
+  ArrowLeft,
+  Bookmark,
+  CheckCircle2,
+  Database,
+  Download,
+  Eye,
+  FileSpreadsheet,
+  Info,
+  MessageCircle,
+  ShieldAlert,
+  ThumbsUp,
+} from "lucide-react";
+
+import KrakenReplies from "./KrakenReplies";
+
+import type { KrakenEntry } from "../types/kraken";
+
+import styles from "../styles/ship-logs.module.css";
+
+type KrakenDetailProps = {
+  log: KrakenEntry;
+  onBack: () => void;
+};
+
+const typeLabels: Record<KrakenEntry["type"], string> = {
+  dataset: "Dataset",
+  challenge: "Challenge",
+};
+
+function formatDomain(value: string) {
+  return value
+    .split("-")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
+function isVerifiedSource(log: KrakenEntry) {
+  return Boolean(
+    log.source &&
+      !log.source.toLowerCase().includes("sample") &&
+      /^https?:\/\//i.test(log.source),
+  );
+}
+
+export default function KrakenDetail({
+  log,
+  onBack,
+}: KrakenDetailProps) {
+  const [signals, setSignals] = useState(log.signals);
+  const [hasSignaled, setHasSignaled] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+  const [replyCount, setReplyCount] = useState(log.replies);
+
+  const verifiedSource = isVerifiedSource(log);
+
+  const handleSignal = () => {
+    if (hasSignaled) {
+      setSignals((current) => Math.max(0, current - 1));
+      setHasSignaled(false);
+      return;
+    }
+
+    setSignals((current) => current + 1);
+    setHasSignaled(true);
+  };
+
+  const handleSave = () => {
+    setIsSaved((current) => !current);
+  };
+
+  return (
+    <section className={styles.detailPage}>
+      <button
+        type="button"
+        className={styles.detailBackButton}
+        onClick={onBack}
+      >
+        <ArrowLeft size={16} />
+        Back to Kraken
+      </button>
+
+      <article className={styles.detailCard}>
+        <header className={styles.detailHeader}>
+          <div className={styles.detailType}>
+            {typeLabels[log.type]}
+          </div>
+
+          <h1>{log.title}</h1>
+
+          <p className={styles.detailDescription}>
+            {log.description}
+          </p>
+
+          <div className={styles.detailAuthor}>
+            <span className={styles.detailAvatar}>
+              {log.authorInitial}
+            </span>
+
+            <div>
+              <strong>{log.author}</strong>
+              <span>Published {log.publishedLabel}</span>
+            </div>
+          </div>
+        </header>
+
+        <div className={styles.detailStats}>
+          <button
+            type="button"
+            onClick={handleSignal}
+            aria-pressed={hasSignaled}
+            className={
+              hasSignaled ? styles.detailSignalActive : ""
+            }
+          >
+            <ThumbsUp size={16} />
+            {signals}
+            <span>{hasSignaled ? "Signaled" : "Signals"}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              document
+                .getElementById("kraken-replies")
+                ?.scrollIntoView({ behavior: "smooth" });
+            }}
+          >
+            <MessageCircle size={16} />
+            {replyCount}
+            <span>Replies</span>
+          </button>
+
+          <button type="button" aria-label={`${log.views} views`}>
+            <Eye size={16} />
+            {log.views}
+            <span>Views</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleSave}
+            aria-label={
+              isSaved
+                ? "Remove Kraken entry from saved"
+                : "Save Kraken entry"
+            }
+            aria-pressed={isSaved}
+            className={
+              isSaved ? styles.detailSaveActive : ""
+            }
+          >
+            <Bookmark
+              size={16}
+              fill={isSaved ? "currentColor" : "none"}
+            />
+            <span>{isSaved ? "Saved" : "Save"}</span>
+          </button>
+        </div>
+
+        <div className={styles.detailBody}>
+          {log.type === "dataset" && (
+            <section
+              className={styles.datasetWorkspace}
+              aria-labelledby="dataset-overview-title"
+            >
+              <div className={styles.datasetSectionHeading}>
+                <div>
+                  <span className={styles.datasetEyebrow}>
+                    DATASET OVERVIEW
+                  </span>
+
+                  <h2 id="dataset-overview-title">
+                    Explore this dataset
+                  </h2>
+
+                  <p>
+                    Review the available metadata before working
+                    with the data in The Dock.
+                  </p>
+                </div>
+
+                <div className={styles.datasetIcon}>
+                  <Database size={22} />
+                </div>
+              </div>
+
+              <div className={styles.datasetFacts}>
+                <div className={styles.datasetFact}>
+                  <span>Format</span>
+                  <strong>{log.format}</strong>
+                </div>
+
+                <div className={styles.datasetFact}>
+                  <span>Reported records</span>
+                  <strong>
+                    {log.recordCount.toLocaleString()}
+                  </strong>
+                </div>
+
+                <div className={styles.datasetFact}>
+                  <span>Reported size</span>
+                  <strong>{log.size}</strong>
+                </div>
+
+                <div className={styles.datasetFact}>
+                  <span>Difficulty</span>
+                  <strong>
+                    {formatDomain(log.difficulty)}
+                  </strong>
+                </div>
+
+                <div className={styles.datasetFact}>
+                  <span>Domain</span>
+                  <strong>{formatDomain(log.domain)}</strong>
+                </div>
+
+                <div className={styles.datasetFact}>
+                  <span>Task type</span>
+                  <strong>{formatDomain(log.taskType)}</strong>
+                </div>
+              </div>
+
+              <div
+                className={
+                  verifiedSource
+                    ? styles.datasetSourceVerified
+                    : styles.datasetSourceNotice
+                }
+                role="status"
+              >
+                {verifiedSource ? (
+                  <CheckCircle2 size={18} />
+                ) : (
+                  <ShieldAlert size={18} />
+                )}
+
+                <div>
+                  <strong>
+                    {verifiedSource
+                      ? "Source link available"
+                      : "Sample listing — source not verified"}
+                  </strong>
+
+                  <p>
+                    {verifiedSource
+                      ? "A source URL is available. Confirm its license and file format before using the data."
+                      : "The current entry contains descriptive metadata only. A downloadable file, confirmed schema, and license have not been provided."}
+                  </p>
+
+                  {log.source && (
+                    <span className={styles.datasetSourceName}>
+                      Listed source: {log.source}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className={styles.datasetPreview}>
+                <div className={styles.datasetPreviewHeader}>
+                  <div className={styles.datasetPreviewTitle}>
+                    <FileSpreadsheet size={18} />
+                    <div>
+                      <strong>Data preview</strong>
+                      <span>Schema and sample rows</span>
+                    </div>
+                  </div>
+
+                  <span className={styles.datasetPreviewFormat}>
+                    {log.format}
+                  </span>
+                </div>
+
+                <div className={styles.datasetPreviewEmpty}>
+                  <div className={styles.datasetPreviewEmptyIcon}>
+                    <Info size={22} />
+                  </div>
+
+                  <h3>Preview not available yet</h3>
+
+                  <p>
+                    A preview will appear when this listing has
+                    an accessible data file. We won't generate
+                    sample rows and present them as real data.
+                  </p>
+                </div>
+              </div>
+
+              <div className={styles.datasetDockAction}>
+                <div>
+                  <strong>Continue in The Dock</strong>
+                  <p>
+                    Analyze this dataset with Python and SQL in
+                    your notebook.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  disabled={!verifiedSource}
+                  title={
+                    verifiedSource
+                      ? "Open the dataset source"
+                      : "Available when a supported dataset file is connected"
+                  }
+                  onClick={() => {
+                    if (!verifiedSource || !log.source) return;
+                    window.open(
+                      log.source,
+                      "_blank",
+                      "noopener,noreferrer",
+                    );
+                  }}
+                >
+                  <Download size={16} />
+                  Open in Dock
+                </button>
+              </div>
+
+              {!verifiedSource && (
+                <p className={styles.datasetActionNote}>
+                  Dock integration will activate when a real,
+                  supported dataset file is connected.
+                </p>
+              )}
+            </section>
+          )}
+
+          <div className={styles.detailContent}>
+            <ReactMarkdown>{log.content}</ReactMarkdown>
+          </div>
+
+          {log.tags.length > 0 && (
+            <div className={styles.detailTags}>
+              {log.tags.map((tag) => (
+                <span key={tag}>#{tag}</span>
+              ))}
+            </div>
+          )}
+
+          <div id="kraken-replies">
+            <KrakenReplies
+              onReplyCountChange={setReplyCount}
+            />
+          </div>
+        </div>
+      </article>
+    </section>
+  );
+}

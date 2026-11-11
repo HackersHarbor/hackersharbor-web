@@ -1,0 +1,1343 @@
+.sidebar {
+
+  --sidebar-bg: #252526;
+
+  --sidebar-border: #383838;
+
+  --sidebar-text: #d4d4d4;
+
+  --sidebar-muted: #a0a0a0;
+
+  --sidebar-subtle: #777777;
+
+  --sidebar-hover: #303030;
+
+  --sidebar-active: #333333;
+
+  --sidebar-green: #29b77a;
+
+  position: relative;
+
+  z-index: 20;
+
+  display: flex;
+
+  flex: 0 0 224px;
+
+  flex-direction: column;
+
+  width: 224px;
+
+  min-width: 224px;
+
+  height: 100%;
+
+  min-height: 0;
+
+  overflow: hidden;
+
+  color: var(--sidebar-text);
+
+  background: var(--sidebar-bg);
+
+  border-right: 1px solid var(--sidebar-border);
+
+  font-family: Inter, "Segoe UI", Arial, sans-serif;
+
+  font-size: 12px;
+
+  line-height: 1.45;
+
+  transition:
+
+    width 260ms cubic-bezier(0.22, 1, 0.36, 1),
+
+    min-width 260ms cubic-bezier(0.22, 1, 0.36, 1),
+
+    flex-basis 260ms cubic-bezier(0.22, 1, 0.36, 1),
+
+    transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
+
+  box-sizing: border-box;
+
+}
+
+.sidebar *,
+
+.sidebar *::before,
+
+.sidebar *::after {
+
+  box-sizing: border-box;
+
+}
+
+.sidebar button {
+
+  font: inherit;
+
+}
+
+.collapsed {
+
+  flex-basis: 52px;
+
+  width: 52px;
+
+  min-width: 52px;
+
+}
+
+.sidebarHeader {
+
+  display: flex;
+
+  flex: 0 0 auto;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 8px;
+
+  min-height: 48px;
+
+  padding: 6px 8px;
+
+  background: var(--sidebar-bg);
+
+  border-bottom: 1px solid var(--sidebar-border);
+
+}
+
+.headerLabel {
+
+  overflow: hidden;
+
+  color: #87928a;
+
+  font-size: 10px;
+
+  font-weight: 700;
+
+  letter-spacing: 1.2px;
+
+  text-overflow: ellipsis;
+
+  white-space: nowrap;
+
+}
+
+.collapseButton,
+
+.mobileClose {
+
+  display: inline-flex;
+
+  flex: 0 0 32px;
+
+  align-items: center;
+
+  justify-content: center;
+
+  width: 32px;
+
+  height: 32px;
+
+  padding: 0;
+
+  color: var(--sidebar-muted);
+
+  background: transparent;
+
+  border: 1px solid transparent;
+
+  border-radius: 5px;
+
+  cursor: pointer;
+
+  transition:
+
+    color 120ms ease,
+
+    background 120ms ease,
+
+    border-color 120ms ease;
+
+}
+
+.collapseButton:hover,
+
+.mobileClose:hover {
+
+  color: #ffffff;
+
+  background: var(--sidebar-hover);
+
+  border-color: #484848;
+
+}
+
+.collapseButton:focus-visible,
+
+.mobileClose:focus-visible,
+
+.navItem:focus-visible {
+
+  outline: 1px solid var(--sidebar-green);
+
+  outline-offset: 2px;
+
+}
+
+.mobileClose {
+
+  display: none;
+
+}
+
+.collapsed .sidebarHeader {
+
+  justify-content: center;
+
+  padding-right: 6px;
+
+  padding-left: 6px;
+
+}
+
+.collapsed .headerLabel {
+
+  display: none;
+
+}
+
+.navigation {
+
+  display: flex;
+
+  flex: 1 1 auto;
+
+  flex-direction: column;
+
+  gap: 20px;
+
+  min-width: 0;
+
+  min-height: 0;
+
+  padding: 12px 8px 10px;
+
+  overflow-x: hidden;
+
+  overflow-y: auto;
+
+  scrollbar-width: thin;
+
+  scrollbar-color: #484848 transparent;
+
+}
+
+.navigation::-webkit-scrollbar {
+
+  width: 5px;
+
+}
+
+.navigation::-webkit-scrollbar-track {
+
+  background: transparent;
+
+}
+
+.navigation::-webkit-scrollbar-thumb {
+
+  background: #484848;
+
+  border-radius: 4px;
+
+}
+
+.navGroup,
+
+.bottomGroup {
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 3px;
+
+  min-width: 0;
+
+}
+
+.groupLabel {
+
+  margin: 5px 8px 7px;
+
+  color: #858f88;
+
+  font-size: 10px;
+
+  font-weight: 700;
+
+  letter-spacing: 1.15px;
+
+  line-height: 18px;
+
+  white-space: nowrap;
+
+}
+
+.navItem {
+
+  position: relative;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 10px;
+
+  width: 100%;
+
+  min-width: 0;
+
+  min-height: 34px;
+
+  padding: 0 9px;
+
+  overflow: hidden;
+
+  color: #b8b8b8;
+
+  text-align: left;
+
+  background: transparent;
+
+  border: 1px solid transparent;
+
+  border-radius: 4px;
+
+  cursor: pointer;
+
+  transition:
+
+    color 120ms ease,
+
+    background 120ms ease,
+
+    border-color 120ms ease;
+
+}
+
+.navItem > svg {
+
+  flex: 0 0 18px;
+
+  width: 18px;
+
+  height: 18px;
+
+  color: #999999;
+
+  transition: color 120ms ease;
+
+}
+
+.navLabel {
+
+  flex: 1 1 auto;
+
+  min-width: 0;
+
+  overflow: hidden;
+
+  color: inherit;
+
+  font-size: 12px;
+
+  font-weight: 500;
+
+  text-overflow: ellipsis;
+
+  white-space: nowrap;
+
+}
+
+.navItem:hover {
+
+  color: #f0f0f0;
+
+  background: #303030;
+
+}
+
+.navItem:hover > svg {
+
+  color: #d4d4d4;
+
+}
+
+/* Selected item */
+
+.navItemActive {
+
+  color: #e6e6e6;
+
+  background: #333333;
+
+  border-color: #414141;
+
+  font-weight: 600;
+
+}
+
+.navItemActive::before {
+
+  position: absolute;
+
+  top: 5px;
+
+  bottom: 5px;
+
+  left: -1px;
+
+  width: 3px;
+
+  background: var(--sidebar-green);
+
+  border-radius: 0 3px 3px 0;
+
+  content: "";
+
+}
+
+.navItemActive > svg {
+
+  color: var(--sidebar-green);
+
+}
+
+.navItemActive:hover {
+
+  color: #ffffff;
+
+  background: #383838;
+
+}
+
+.navCount {
+
+  display: inline-flex;
+
+  flex: 0 0 auto;
+
+  align-items: center;
+
+  justify-content: center;
+
+  min-width: 18px;
+
+  margin-left: auto;
+
+  color: #858585;
+
+  font-size: 10px;
+
+  font-variant-numeric: tabular-nums;
+
+}
+
+.soonItem {
+
+  color: #858585;
+
+  cursor: default;
+
+}
+
+.soonItem > svg {
+
+  color: #858585;
+
+}
+
+.soonItem:hover {
+
+  color: #a5a5a5;
+
+  background: #2b2b2b;
+
+}
+
+.soonItem:hover > svg {
+
+  color: #a5a5a5;
+
+}
+
+.soonPill {
+
+  display: inline-flex;
+
+  flex: 0 0 auto;
+
+  align-items: center;
+
+  justify-content: center;
+
+  min-height: 18px;
+
+  margin-left: auto;
+
+  padding: 1px 5px;
+
+  color: #929292;
+
+  font-size: 9px;
+
+  line-height: 1.3;
+
+  background: #292929;
+
+  border: 1px solid #3d3d3d;
+
+  border-radius: 4px;
+
+}
+
+.flexSpacer {
+
+  flex: 1 0 24px;
+
+  min-height: 24px;
+
+}
+
+.bottomGroup {
+
+  gap: 3px;
+
+  padding-top: 10px;
+
+  border-top: 1px solid #383838;
+
+}
+
+.accountRow {
+
+  display: flex;
+
+  flex: 0 0 auto;
+
+  align-items: center;
+
+  gap: 9px;
+
+  min-width: 0;
+
+  min-height: 52px;
+
+  padding: 8px;
+
+  background: #252526;
+
+  border-top: 1px solid #383838;
+
+}
+
+.accountAvatar {
+
+  display: inline-flex;
+
+  flex: 0 0 30px;
+
+  align-items: center;
+
+  justify-content: center;
+
+  width: 30px;
+
+  height: 30px;
+
+  color: #e0f5e7;
+
+  font-size: 11px;
+
+  font-weight: 700;
+
+  background: #303b34;
+
+  border: 1px solid #41634d;
+
+  border-radius: 7px;
+
+}
+
+.accountName {
+
+  flex: 1 1 auto;
+
+  min-width: 0;
+
+  overflow: hidden;
+
+  color: #b8b8b8;
+
+  font-size: 11px;
+
+  text-overflow: ellipsis;
+
+  white-space: nowrap;
+
+}
+
+.accountMenu {
+
+  flex: 0 0 auto;
+
+  color: #858585;
+
+  font-size: 17px;
+
+  line-height: 1;
+
+}
+
+.collapsed .accountRow {
+
+  justify-content: center;
+
+  padding-right: 4px;
+
+  padding-left: 4px;
+
+}
+
+.collapsed .accountName,
+
+.collapsed .accountMenu {
+
+  display: none;
+
+}
+
+.collapsed .navigation {
+
+  gap: 18px;
+
+  padding-right: 7px;
+
+  padding-left: 7px;
+
+}
+
+.collapsed .navGroup,
+
+.collapsed .bottomGroup {
+
+  align-items: center;
+
+}
+
+.collapsed .groupLabel {
+
+  display: none;
+
+}
+
+.collapsed .navItem {
+
+  justify-content: center;
+
+  gap: 0;
+
+  width: 36px;
+
+  min-width: 36px;
+
+  height: 36px;
+
+  min-height: 36px;
+
+  padding: 0;
+
+  overflow: visible;
+
+}
+
+.collapsed .navItemActive::before {
+
+  left: -8px;
+
+}
+
+.collapsed .navLabel {
+
+  display: none;
+
+}
+
+.collapsed .navCount,
+
+.collapsed .soonPill {
+
+  display: none;
+
+}
+
+.toast {
+
+  position: absolute;
+
+  right: 10px;
+
+  bottom: 62px;
+
+  left: 10px;
+
+  z-index: 70;
+
+  padding: 10px 12px;
+
+  color: #d4d4d4;
+
+  font-size: 11px;
+
+  line-height: 1.5;
+
+  background: #2d2d2d;
+
+  border: 1px solid #505050;
+
+  border-radius: 5px;
+
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+
+}
+
+.collapsed .toast {
+
+  right: auto;
+
+  left: 58px;
+
+  width: 190px;
+
+}
+
+.mobileBackdrop {
+
+  display: none;
+
+}
+
+@media (max-width: 760px) {
+
+  .sidebar,
+
+  .collapsed {
+
+    position: fixed;
+
+    top: 0;
+
+    bottom: 0;
+
+    left: 0;
+
+    z-index: 100;
+
+    width: 264px;
+
+    min-width: 264px;
+
+    max-width: calc(100vw - 48px);
+
+    height: 100dvh;
+
+    flex-basis: 264px;
+
+    background: #252526;
+
+    border-right: 1px solid #383838;
+
+    box-shadow: 18px 0 48px rgba(0, 0, 0, 0.4);
+
+    transform: translateX(-105%);
+
+    visibility: hidden;
+
+    transition:
+
+      transform 200ms ease,
+
+      visibility 200ms ease;
+
+  }
+
+  .sidebar.mobileOpen,
+
+  .collapsed.mobileOpen {
+
+    transform: translateX(0);
+
+    visibility: visible;
+
+  }
+
+  .mobileBackdrop {
+
+    position: fixed;
+
+    inset: 0;
+
+    z-index: 99;
+
+    display: block;
+
+    width: 100%;
+
+    height: 100%;
+
+    padding: 0;
+
+    background: rgba(0, 0, 0, 0.58);
+
+    border: 0;
+
+    cursor: pointer;
+
+    backdrop-filter: blur(2px);
+
+    -webkit-backdrop-filter: blur(2px);
+
+  }
+
+  .mobileClose {
+
+    display: inline-flex;
+
+  }
+
+  .collapseButton {
+
+    display: none;
+
+  }
+
+  .sidebarHeader,
+
+  .collapsed .sidebarHeader {
+
+    justify-content: space-between;
+
+    padding-right: 8px;
+
+    padding-left: 12px;
+
+  }
+
+  .sidebarHeader .headerLabel,
+
+  .collapsed .headerLabel {
+
+    display: inline;
+
+  }
+
+  .collapsed .navigation {
+
+    gap: 20px;
+
+    padding: 12px 8px 10px;
+
+  }
+
+  .collapsed .navGroup,
+
+  .collapsed .bottomGroup {
+
+    align-items: stretch;
+
+  }
+
+  .collapsed .groupLabel {
+
+    display: block;
+
+  }
+
+  .collapsed .navItem {
+
+    justify-content: flex-start;
+
+    gap: 10px;
+
+    width: 100%;
+
+    min-width: 0;
+
+    min-height: 34px;
+
+    padding: 0 9px;
+
+  }
+
+  .collapsed .navLabel {
+
+    display: block;
+
+  }
+
+  .collapsed .navCount,
+
+  .collapsed .soonPill {
+
+    display: inline-flex;
+
+  }
+
+  .collapsed .accountRow {
+
+    justify-content: flex-start;
+
+    padding: 8px;
+
+  }
+
+  .collapsed .accountName,
+
+  .collapsed .accountMenu {
+
+    display: inline;
+
+  }
+
+  .collapsed .toast {
+
+    right: 10px;
+
+    left: 10px;
+
+    width: auto;
+
+  }
+
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+  .sidebar,
+
+  .navItem,
+
+  .navItem > svg,
+
+  .collapseButton,
+
+  .mobileClose {
+
+    transition: none;
+
+  }
+
+}
+
+/* Match the Dock top bar height */
+
+.sidebarHeader {
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  box-sizing: border-box;
+
+  width: 100%;
+
+  height: 40px;
+
+  min-height: 40px;
+
+  padding: 0;
+
+  margin: 0;
+
+}
+
+/* Center the collapse icon precisely */
+
+.collapseButton {
+
+  display: inline-flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  box-sizing: border-box;
+
+  width: 36px;
+
+  height: 32px;
+
+  min-width: 36px;
+
+  margin: 0;
+
+  padding: 0;
+
+  line-height: 1;
+
+  transform: none;
+
+}
+
+/* Keep the collapsed header centered */
+
+.collapsed .sidebarHeader {
+
+  justify-content: center;
+
+  height: 40px;
+
+  min-height: 40px;
+
+  padding: 0;
+
+}
+
+/* Align sidebar header with the 43px Dock top bar */
+
+.sidebarHeader {
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  box-sizing: border-box;
+
+  width: 100%;
+
+  height: 43px;
+
+  min-height: 43px;
+
+  padding: 0 8px;
+
+  margin: 0;
+
+}
+
+/* Center the collapse button inside the header */
+
+.collapseButton {
+
+  display: inline-flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  flex: 0 0 36px;
+
+  width: 36px;
+
+  height: 32px;
+
+  margin: 0;
+
+  padding: 0;
+
+  box-sizing: border-box;
+
+  transform: none;
+
+}
+
+/* Preserve alignment when the sidebar is collapsed */
+
+.collapsed .sidebarHeader {
+
+  justify-content: center;
+
+  height: 43px;
+
+  min-height: 43px;
+
+  padding: 0;
+
+}
+
+.navigation {
+
+  display: flex;
+
+  flex: 1 1 0;
+
+  flex-direction: column;
+
+  min-height: 0;
+
+  overflow-y: auto;
+
+  overflow-x: hidden;
+
+  padding: 6px 8px;
+
+  scrollbar-width: thin;
+
+  scrollbar-color: rgba(255,255,255,.15) transparent;
+
+}
+
+.navGroup {
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 2px;
+
+  flex-shrink: 0;
+
+}
+
+.groupLabel {
+
+  margin: 8px 8px 5px;
+
+  color: var(--sidebar-muted);
+
+  font-size: 11px;
+
+  font-weight: 700;
+
+  letter-spacing: .13em;
+
+}
+
+.navItem {
+
+  height: 32px;
+
+  min-height: 32px;
+
+}
+
+.soonPill {
+
+  flex: 0 0 auto;
+
+  margin-left: 4px;
+
+  padding: 1px 4px;
+
+  font-size: 9px;
+
+  line-height: 1.3;
+
+  white-space: nowrap;
+
+}
+
+.bottomGroup {
+
+  display: flex;
+
+  flex: 0 0 auto;
+
+  flex-direction: column;
+
+  gap: 2px;
+
+  padding: 6px 8px 4px;
+
+  border-top: 1px solid var(--sidebar-border);
+
+}
+
+.accountRow {
+
+  display: flex;
+
+  flex: 0 0 auto;
+
+  align-items: center;
+
+  gap: 9px;
+
+  min-height: 46px;
+
+  padding: 6px 8px;
+
+  border-top: 1px solid var(--sidebar-border);
+
+}
+
+.navItem:focus:not(:focus-visible),
+
+.collapseButton:focus:not(:focus-visible),
+
+.mobileClose:focus:not(:focus-visible) {
+
+outline: none;
+
+}
+
+.navItem:focus-visible,
+
+.collapseButton:focus-visible,
+
+.mobileClose:focus-visible {
+
+outline: 2px solid var(--sidebar-green);
+
+outline-offset: 2px;
+
+}
+
+.navItemActive {
+
+color: #f1fbf4;
+
+background: #192b21;
+
+outline: none;
+
+}
+
+.navItemActive::before {
+
+position: absolute;
+
+top: 6px;
+
+bottom: 6px;
+
+left: -8px;
+
+width: 3px;
+
+content: "";
+
+background: var(--sidebar-green);
+
+border-radius: 0 3px 3px 0;
+
+}
+
+.navItemActive > svg {
+
+color: var(--sidebar-green);
+
+}
+
+
+/* Align the sidebar header bottom border with Dock's 38.5px header row. */
+.sidebarHeader {
+  box-sizing: border-box;
+  flex: 0 0 38.5px;
+  height: 38.5px;
+  min-height: 38.5px;
+  padding-top: 0;
+  padding-bottom: 0;
+  border-bottom: 1px solid var(--sidebar-border);
+}
+
+
+/* Match the approved Dock 38.5px header in both expanded and collapsed states. */
+.sidebarHeader,
+.collapsed .sidebarHeader {
+  box-sizing: border-box;
+  flex: 0 0 38.5px;
+  height: 38.5px;
+  min-height: 38.5px;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+/* =========================================================
+   SMOOTH EXPLORER SIDEBAR EXPAND / COLLAPSE
+   Additive override — preserves existing styles and layout
+   ========================================================= */
+
+/* Smooth panel resizing */
+.sidebar {
+  transition:
+    width 300ms cubic-bezier(0.22, 1, 0.36, 1),
+    min-width 300ms cubic-bezier(0.22, 1, 0.36, 1),
+    flex-basis 300ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Keep labels rendered so their disappearance can animate */
+.navLabel,
+.headerLabel,
+.groupLabel,
+.navCount,
+.soonPill,
+.accountName,
+.accountMenu {
+  transition:
+    opacity 180ms ease,
+    max-width 220ms ease,
+    transform 220ms ease;
+}
+
+/* Fade labels out when collapsing */
+.collapsed .navLabel,
+.collapsed .headerLabel,
+.collapsed .groupLabel,
+.collapsed .navCount,
+.collapsed .soonPill,
+.collapsed .accountName,
+.collapsed .accountMenu {
+  opacity: 0;
+  transform: translateX(-5px);
+  pointer-events: none;
+}
+
+/* Restore labels when expanded */
+.sidebar:not(.collapsed) .navLabel,
+.sidebar:not(.collapsed) .headerLabel,
+.sidebar:not(.collapsed) .groupLabel,
+.sidebar:not(.collapsed) .navCount,
+.sidebar:not(.collapsed) .soonPill,
+.sidebar:not(.collapsed) .accountName,
+.sidebar:not(.collapsed) .accountMenu {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* Smooth navigation alignment */
+.navItem {
+  transition:
+    color 180ms ease,
+    background 180ms ease,
+    border-color 180ms ease,
+    padding 300ms cubic-bezier(0.22, 1, 0.36, 1),
+    gap 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Respect reduced-motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .sidebar,
+  .navLabel,
+  .headerLabel,
+  .groupLabel,
+  .navCount,
+  .soonPill,
+  .accountName,
+  .accountMenu,
+  .navItem {
+    transition: none !important;
+  }
+}
