@@ -1,4 +1,5 @@
-﻿import ReactMarkdown from "react-markdown";
+﻿
+import ReactMarkdown from "react-markdown";
 import styles from "./article-reading.module.css";
 
 interface ArticleReadingContentProps {

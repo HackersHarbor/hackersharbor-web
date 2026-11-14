@@ -1,0 +1,379 @@
+﻿
+/*
+ * HackersHarbor Blog — Interactive Topic Directory
+ * Shared editorial green design system.
+ */
+
+ .directoryContent {
+  width: 100%;
+}
+
+/* =========================================================
+   SEARCH CONTROLS
+   ========================================================= */
+
+.controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 22px;
+}
+
+.searchBox {
+  display: flex;
+  width: min(100%, 540px);
+  min-height: 48px;
+  align-items: center;
+  gap: 12px;
+  padding: 0 15px;
+  border: 1px solid var(--blog-border);
+  border-radius: 8px;
+  background: var(--blog-surface);
+  color: var(--blog-muted);
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.searchBox:focus-within {
+  border-color: var(--blog-accent);
+  box-shadow: 0 0 0 3px
+    color-mix(in srgb, var(--blog-accent) 10%, transparent);
+}
+
+.searchBox input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--blog-text);
+  font: inherit;
+  font-size: 12px;
+}
+
+.searchBox input::placeholder {
+  color: var(--blog-muted);
+  opacity: 0.8;
+}
+
+.searchBox input::-webkit-search-cancel-button {
+  cursor: pointer;
+}
+
+.clearSearch {
+  flex-shrink: 0;
+  padding: 5px 0;
+  border: 0;
+  background: transparent;
+  color: var(--blog-accent);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.clearSearch:hover {
+  color: var(--blog-text);
+}
+
+.resultCount {
+  flex-shrink: 0;
+  color: var(--blog-muted);
+  font-size: 11px;
+  font-weight: 550;
+}
+
+/* =========================================================
+   CATEGORY FILTERS
+   ========================================================= */
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 27px;
+}
+
+.filterButton {
+  min-height: 35px;
+  padding: 0 14px;
+  border: 1px solid var(--blog-border);
+  border-radius: 999px;
+  background: var(--blog-surface);
+  color: var(--blog-muted);
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    color 150ms ease,
+    border-color 150ms ease,
+    background 150ms ease,
+    transform 150ms ease;
+}
+
+.filterButton:hover {
+  transform: translateY(-1px);
+  border-color: var(--blog-accent);
+  color: var(--blog-text);
+}
+
+.filterActive {
+  border-color: var(--blog-accent);
+  background: var(--blog-accent);
+  color: #ffffff;
+}
+
+.filterActive:hover {
+  border-color: var(--blog-accent);
+  background: var(--blog-accent);
+  color: #ffffff;
+}
+
+/* =========================================================
+   TOPIC GRID
+   ========================================================= */
+
+.topicGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.topicCard {
+  display: flex;
+  min-width: 0;
+  min-height: 205px;
+  flex-direction: column;
+  padding: 22px;
+  border: 1px solid var(--blog-border);
+  border-radius: 12px;
+  background: var(--blog-surface);
+  color: inherit;
+  text-decoration: none;
+  transition:
+    border-color 170ms ease,
+    transform 170ms ease,
+    box-shadow 170ms ease;
+}
+
+.topicCard:hover {
+  transform: translateY(-3px);
+  border-color: var(--blog-accent);
+  box-shadow: 0 10px 28px
+    color-mix(in srgb, var(--blog-accent) 9%, transparent);
+}
+
+.cardTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--blog-accent);
+}
+
+.topicType {
+  font-size: 9px;
+  font-weight: 750;
+  letter-spacing: 1.5px;
+}
+
+.cardTop svg {
+  opacity: 0.7;
+  transition:
+    transform 150ms ease,
+    opacity 150ms ease;
+}
+
+.topicCard:hover .cardTop svg {
+  transform: translate(2px, -2px);
+  opacity: 1;
+}
+
+.topicCard h3 {
+  margin: 19px 0 8px;
+  color: var(--blog-text);
+  font-family: var(--font-sans, "Inter", system-ui, sans-serif);
+  font-size: 18px;
+  font-weight: 690;
+  letter-spacing: -0.4px;
+  line-height: 1.35;
+}
+
+.topicCard > p {
+  flex: 1;
+  margin: 0;
+  color: var(--blog-muted);
+  font-size: 11px;
+  line-height: 1.75;
+}
+
+.cardBottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 20px;
+  padding-top: 13px;
+  border-top: 1px solid var(--blog-border);
+  color: var(--blog-muted);
+  font-size: 9px;
+}
+
+.cardArrow {
+  color: var(--blog-accent);
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+/* =========================================================
+   EMPTY SEARCH STATE
+   ========================================================= */
+
+.emptyState {
+  display: flex;
+  min-height: 260px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 35px 20px;
+  border: 1px dashed var(--blog-border);
+  border-radius: 12px;
+  background: var(--blog-visual, transparent);
+  text-align: center;
+}
+
+.emptyEyebrow {
+  color: var(--blog-accent);
+  font-size: 9px;
+  font-weight: 750;
+  letter-spacing: 1.5px;
+}
+
+.emptyState h3 {
+  margin: 13px 0 7px;
+  color: var(--blog-text);
+  font-family: var(--font-serif, "Fraunces", Georgia, serif);
+  font-size: 22px;
+  font-weight: 650;
+}
+
+.emptyState p {
+  max-width: 400px;
+  margin: 0;
+  color: var(--blog-muted);
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.emptyState button {
+  margin-top: 18px;
+  padding: 10px 17px;
+  border: 1px solid var(--blog-accent);
+  border-radius: 999px;
+  background: var(--blog-accent);
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 650;
+  cursor: pointer;
+  transition:
+    transform 150ms ease,
+    opacity 150ms ease;
+}
+
+.emptyState button:hover {
+  transform: translateY(-1px);
+  opacity: 0.9;
+}
+
+/* =========================================================
+   KEYBOARD ACCESSIBILITY
+   ========================================================= */
+
+.searchBox:focus-within,
+.filterButton:focus-visible,
+.clearSearch:focus-visible,
+.topicCard:focus-visible,
+.emptyState button:focus-visible {
+  outline: 3px solid
+    color-mix(in srgb, var(--blog-accent) 35%, transparent);
+  outline-offset: 3px;
+}
+
+/* =========================================================
+   TABLET
+   ========================================================= */
+
+@media (max-width: 950px) {
+  .topicGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 600px) {
+  .controls {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .searchBox {
+    box-sizing: border-box;
+    width: 100%;
+  }
+
+  .resultCount {
+    align-self: flex-end;
+  }
+
+  .filters {
+    gap: 7px;
+    margin-bottom: 21px;
+  }
+
+  .filterButton {
+    min-height: 33px;
+    padding: 0 11px;
+    font-size: 9px;
+  }
+
+  .topicGrid {
+    grid-template-columns: 1fr;
+    gap: 11px;
+  }
+
+  .topicCard {
+    min-height: 185px;
+    padding: 20px;
+  }
+
+  .topicCard h3 {
+    font-size: 17px;
+  }
+}
+
+/* =========================================================
+   REDUCED MOTION
+   ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  .searchBox,
+  .filterButton,
+  .topicCard,
+  .cardTop svg,
+  .emptyState button {
+    transition: none;
+  }
+
+  .filterButton:hover,
+  .topicCard:hover,
+  .emptyState button:hover {
+    transform: none;
+  }
+}

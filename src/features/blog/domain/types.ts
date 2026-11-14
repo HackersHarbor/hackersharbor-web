@@ -25,3 +25,20 @@ export interface ArticleSummary {
   publishedAt: string;
   featured: boolean;
 }
+
+
+export interface BlogTopicCategory {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+}
+
+export interface BlogTopic {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  categorySlugs: string[];
+  keywords: string[];
+}

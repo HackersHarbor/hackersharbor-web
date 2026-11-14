@@ -1,4 +1,5 @@
-﻿"use client";
+﻿
+"use client";
 
 import {
   useCallback,
@@ -41,6 +42,7 @@ export function useNavigator(
   const [messages, setMessages] = useState<NavigatorMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
   const [context, setContextState] = useState<NavigatorPageContext>(
     options.context ?? {}
   );
@@ -54,6 +56,7 @@ export function useNavigator(
     return () => {
       mountedRef.current = false;
       abortControllerRef.current?.abort();
+      abortControllerRef.current = null;
     };
   }, []);
 
@@ -65,8 +68,14 @@ export function useNavigator(
   );
 
   const stopGeneration = useCallback(() => {
-    abortControllerRef.current?.abort();
+    const controller = abortControllerRef.current;
+
+    if (!controller) {
+      return;
+    }
+
     abortControllerRef.current = null;
+    controller.abort();
 
     if (mountedRef.current) {
       setIsLoading(false);
@@ -74,19 +83,23 @@ export function useNavigator(
   }, []);
 
   const clearConversation = useCallback(() => {
-    abortControllerRef.current?.abort();
-    abortControllerRef.current = null;
+    const controller = abortControllerRef.current;
 
-    setMessages([]);
-    setError(null);
-    setIsLoading(false);
+    abortControllerRef.current = null;
+    controller?.abort();
+
+    if (mountedRef.current) {
+      setMessages([]);
+      setError(null);
+      setIsLoading(false);
+    }
   }, []);
 
   const sendMessage = useCallback(
     async (content: string) => {
       const trimmedContent = content.trim();
 
-      if (!trimmedContent || isLoading) {
+      if (!trimmedContent || abortControllerRef.current) {
         return;
       }
 
@@ -118,6 +131,45 @@ export function useNavigator(
       const controller = new AbortController();
       abortControllerRef.current = controller;
 
+      let assistantContent = "";
+      let reader: ReadableStreamDefaultReader<Uint8Array> | null = null;
+
+      const isCurrentRequest = () =>
+        mountedRef.current &&
+        abortControllerRef.current === controller &&
+        !controller.signal.aborted;
+
+      const updateAssistantMessage = (content: string) => {
+        if (!isCurrentRequest()) {
+          return;
+        }
+
+        setMessages((currentMessages) =>
+          currentMessages.map((message) =>
+            message.id === assistantMessage.id
+              ? {
+                  ...message,
+                  content,
+                }
+              : message
+          )
+        );
+      };
+
+      const removeEmptyAssistantMessage = () => {
+        if (!mountedRef.current) {
+          return;
+        }
+
+        setMessages((currentMessages) =>
+          currentMessages.filter(
+            (message) =>
+              message.id !== assistantMessage.id ||
+              Boolean(message.content.trim())
+          )
+        );
+      };
+
       try {
         const response = await fetch("/api/navigator", {
           method: "POST",
@@ -138,6 +190,10 @@ export function useNavigator(
           signal: controller.signal,
         });
 
+        if (!isCurrentRequest()) {
+          return;
+        }
+
         if (!response.ok) {
           const data = await response.json().catch(
             () => null
@@ -155,13 +211,16 @@ export function useNavigator(
           );
         }
 
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
+        reader = response.body.getReader();
 
-        let assistantContent = "";
+        const decoder = new TextDecoder();
 
         while (true) {
           const { done, value } = await reader.read();
+
+          if (!isCurrentRequest()) {
+            break;
+          }
 
           if (done) {
             break;
@@ -172,76 +231,58 @@ export function useNavigator(
             { stream: true }
           );
 
-          if (mountedRef.current) {
-            setMessages((currentMessages) =>
-              currentMessages.map((message) =>
-                message.id === assistantMessage.id
-                  ? {
-                      ...message,
-                      content: assistantContent,
-                    }
-                  : message
-              )
+          updateAssistantMessage(assistantContent);
+        }
+
+        if (isCurrentRequest()) {
+          assistantContent += decoder.decode();
+
+          if (assistantContent.trim()) {
+            updateAssistantMessage(assistantContent);
+          } else {
+            setError(
+              "Navigator returned an empty response. Please try again."
             );
+
+            removeEmptyAssistantMessage();
           }
-        }
-
-        assistantContent += decoder.decode();
-
-        if (mountedRef.current && assistantContent) {
-          setMessages((currentMessages) =>
-            currentMessages.map((message) =>
-              message.id === assistantMessage.id
-                ? {
-                    ...message,
-                    content: assistantContent,
-                  }
-                : message
-            )
-          );
-        }
-
-        if (mountedRef.current && !assistantContent.trim()) {
-          setError("Navigator returned an empty response. Please try again.");
-
-          setMessages((currentMessages) =>
-            currentMessages.filter(
-              (message) => message.id !== assistantMessage.id
-            )
-          );
         }
       } catch (caughtError) {
         if (
           caughtError instanceof Error &&
           caughtError.name === "AbortError"
         ) {
-          // A deliberate stop is not an application error.
-        } else if (mountedRef.current) {
+          if (mountedRef.current && !assistantContent.trim()) {
+            removeEmptyAssistantMessage();
+          }
+        } else if (isCurrentRequest()) {
           setError(
             caughtError instanceof Error
               ? caughtError.message
               : "Something went wrong. Please try again."
           );
 
-          setMessages((currentMessages) =>
-            currentMessages.filter(
-              (message) =>
-                message.id !== assistantMessage.id ||
-                Boolean(message.content.trim())
-            )
-          );
+          removeEmptyAssistantMessage();
         }
       } finally {
-        if (abortControllerRef.current === controller) {
-          abortControllerRef.current = null;
+        if (reader) {
+          try {
+            reader.releaseLock();
+          } catch {
+            // The reader may already have released its lock.
+          }
         }
 
-        if (mountedRef.current) {
-          setIsLoading(false);
+        if (abortControllerRef.current === controller) {
+          abortControllerRef.current = null;
+
+          if (mountedRef.current) {
+            setIsLoading(false);
+          }
         }
       }
     },
-    [context, isLoading, messages]
+    [context, messages]
   );
 
   return {

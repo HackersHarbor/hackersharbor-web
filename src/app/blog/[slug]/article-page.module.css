@@ -1,7 +1,9 @@
-﻿.page {
+﻿
+.page {
   min-height: 100vh;
   background: var(--blog-bg);
   color: var(--blog-text);
+  font-family: var(--blog-sans);
 }
 
 .readingShell {
@@ -23,7 +25,12 @@
 .breadcrumb a {
   flex: 0 0 auto;
   color: var(--blog-accent);
+  font-weight: 600;
   text-decoration: none;
+}
+
+.breadcrumb a:hover {
+  color: var(--blog-brand);
 }
 
 .breadcrumb span:last-child {
@@ -41,14 +48,15 @@
 .category {
   display: inline-flex;
   align-items: center;
-  min-height: 25px;
-  padding: 4px 10px;
-  border: 1px solid var(--blog-border);
-  border-radius: 4px;
-  color: var(--blog-accent);
-  font-size: 10px;
+  min-height: 28px;
+  padding: 5px 12px;
+  border: 1px solid color-mix(in srgb, var(--blog-accent) 25%, var(--blog-border));
+  border-radius: 999px;
+  background: var(--blog-visual);
+  color: var(--blog-brand);
+  font-size: 11px;
   font-weight: 700;
-  letter-spacing: 1.1px;
+  letter-spacing: 0.4px;
   text-decoration: none;
   text-transform: uppercase;
 }
@@ -56,10 +64,12 @@
 .articleHeader h1 {
   margin: 23px 0 17px;
   color: var(--blog-text);
-  font-size: clamp(34px, 5.2vw, 57px);
-  font-weight: 720;
-  letter-spacing: -2.2px;
+  font-family: var(--blog-sans);
+  font-size: clamp(36px, 5.2vw, 60px);
+  font-weight: 800;
+  letter-spacing: -0.055em;
   line-height: 1.1;
+  text-wrap: balance;
 }
 
 .excerpt {
@@ -67,7 +77,7 @@
   margin: 0 auto;
   color: var(--blog-muted);
   font-size: 17px;
-  line-height: 1.7;
+  line-height: 1.75;
 }
 
 .metadata {
@@ -98,8 +108,8 @@
 .bioAvatarFallback {
   display: grid;
   place-items: center;
-  background: color-mix(in srgb, var(--blog-accent) 15%, var(--blog-surface));
-  color: var(--blog-accent);
+  background: color-mix(in srgb, var(--blog-accent) 13%, var(--blog-surface));
+  color: var(--blog-brand);
   font-size: 15px;
   font-weight: 700;
 }
@@ -112,8 +122,12 @@
 .authorDetails a {
   color: var(--blog-text);
   font-size: 12px;
-  font-weight: 650;
+  font-weight: 700;
   text-decoration: none;
+}
+
+.authorDetails a:hover {
+  color: var(--blog-accent);
 }
 
 .authorDetails span,
@@ -134,6 +148,8 @@
   gap: 15px;
 }
 
+/* Article cover */
+
 .cover {
   position: relative;
   display: flex;
@@ -141,20 +157,29 @@
   justify-content: center;
   height: clamp(220px, 34vw, 370px);
   overflow: hidden;
-  border: 1px solid var(--blog-border);
-  border-radius: 10px;
+  border: 1px solid #bbf7d0;
+  border-radius: 20px;
   background:
-    radial-gradient(ellipse at 75% 20%, rgba(105, 160, 111, 0.2), transparent 42%),
-    linear-gradient(135deg, #17251d, #101713 65%, #203528);
+    radial-gradient(
+      ellipse at 75% 20%,
+      rgba(74, 222, 128, 0.3),
+      transparent 42%
+    ),
+    radial-gradient(
+      ellipse at 15% 85%,
+      rgba(22, 163, 74, 0.16),
+      transparent 48%
+    ),
+    linear-gradient(135deg, #f0fdf4, #dcfce7 65%, #f7fef8);
 }
 
 .coverPattern {
   position: absolute;
   inset: 0;
-  opacity: 0.2;
+  opacity: 0.65;
   background-image:
-    linear-gradient(rgba(180, 220, 190, 0.15) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(180, 220, 190, 0.15) 1px, transparent 1px);
+    linear-gradient(rgba(22, 163, 74, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(22, 163, 74, 0.1) 1px, transparent 1px);
   background-size: 38px 38px;
   mask-image: linear-gradient(135deg, black, transparent 85%);
 }
@@ -163,20 +188,23 @@
   position: absolute;
   top: 25px;
   left: 28px;
-  color: rgba(224, 241, 228, 0.7);
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 2px;
+  color: #15803d;
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 1.8px;
 }
 
 .coverInitial {
   position: relative;
-  color: rgba(190, 225, 197, 0.16);
+  color: rgba(22, 163, 74, 0.16);
+  font-family: var(--blog-sans);
   font-size: clamp(150px, 28vw, 300px);
   font-weight: 800;
   letter-spacing: -18px;
   line-height: 1;
 }
+
+/* Article content layout */
 
 .articleLayout {
   display: grid;
@@ -200,14 +228,15 @@
 .sectionEyebrow,
 .bioLabel {
   color: var(--blog-accent);
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 750;
-  letter-spacing: 1.5px;
+  letter-spacing: 1.3px;
 }
 
 .asideRule {
   width: 32px;
-  height: 2px;
+  height: 3px;
+  border-radius: 99px;
   background: var(--blog-accent);
 }
 
@@ -220,6 +249,7 @@
   margin-top: 20px;
   color: var(--blog-muted);
   font-size: 11px;
+  font-weight: 600;
   text-decoration: none;
 }
 
@@ -250,14 +280,17 @@
   background: var(--blog-border);
 }
 
+/* Author information */
+
 .authorBio {
   display: flex;
   align-items: flex-start;
   gap: 18px;
   padding: 24px;
   border: 1px solid var(--blog-border);
-  border-radius: 8px;
+  border-radius: 16px;
   background: var(--blog-surface);
+  box-shadow: 0 5px 20px rgba(17, 24, 19, 0.025);
 }
 
 .bioAvatar,
@@ -273,15 +306,17 @@
   margin: 6px 0;
   color: var(--blog-text);
   font-size: 16px;
-  font-weight: 680;
+  font-weight: 750;
 }
 
 .authorBio p {
   margin: 0;
   color: var(--blog-muted);
   font-size: 12px;
-  line-height: 1.65;
+  line-height: 1.7;
 }
+
+/* Related articles */
 
 .related {
   margin-top: 95px;
@@ -300,54 +335,61 @@
 .relatedHeading h2 {
   margin: 8px 0 0;
   color: var(--blog-text);
-  font-size: 25px;
-  font-weight: 680;
-  letter-spacing: -0.7px;
+  font-family: var(--blog-sans);
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.045em;
 }
 
 .relatedHeading > a {
   color: var(--blog-muted);
   font-size: 11px;
+  font-weight: 600;
   text-decoration: none;
 }
 
 .relatedGrid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 15px;
+  gap: 16px;
 }
 
 .relatedCard {
   display: flex;
   min-height: 205px;
   flex-direction: column;
-  padding: 21px;
+  padding: 22px;
   border: 1px solid var(--blog-border);
-  border-radius: 8px;
+  border-radius: 16px;
   background: var(--blog-surface);
   text-decoration: none;
-  transition: border-color 160ms ease, transform 160ms ease;
+  box-shadow: 0 4px 15px rgba(17, 24, 19, 0.025);
+  transition:
+    border-color 180ms ease,
+    transform 180ms ease,
+    box-shadow 180ms ease;
 }
 
 .relatedCard:hover {
-  transform: translateY(-3px);
+  transform: translateY(-4px);
   border-color: var(--blog-accent);
+  box-shadow: 0 12px 25px rgba(22, 163, 74, 0.08);
 }
 
 .relatedCategory {
   color: var(--blog-accent);
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 1px;
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.8px;
   text-transform: uppercase;
 }
 
 .relatedCard h3 {
   margin: 13px 0 8px;
   color: var(--blog-text);
-  font-size: 15px;
-  font-weight: 680;
-  line-height: 1.4;
+  font-size: 16px;
+  font-weight: 750;
+  line-height: 1.45;
 }
 
 .relatedCard p {
@@ -355,8 +397,8 @@
   overflow: hidden;
   margin: 0 0 18px;
   color: var(--blog-muted);
-  font-size: 11px;
-  line-height: 1.6;
+  font-size: 12px;
+  line-height: 1.7;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 3;
 }
@@ -372,6 +414,8 @@
 .relatedMeta span {
   color: var(--blog-accent);
 }
+
+/* Tablet */
 
 @media (max-width: 800px) {
   .articleLayout {
@@ -400,6 +444,8 @@
   }
 }
 
+/* Mobile */
+
 @media (max-width: 560px) {
   .readingShell {
     width: min(100% - 32px, 1120px);
@@ -412,7 +458,7 @@
 
   .articleHeader h1 {
     font-size: 35px;
-    letter-spacing: -1.3px;
+    letter-spacing: -1.5px;
   }
 
   .excerpt {
@@ -435,6 +481,13 @@
 
   .cover {
     height: 210px;
+    border-radius: 15px;
+  }
+
+  .coverLabel {
+    top: 18px;
+    left: 18px;
+    font-size: 9px;
   }
 
   .authorBio {
@@ -449,4 +502,27 @@
     align-items: flex-start;
     flex-direction: column;
   }
+}
+
+/* Reduced motion */
+
+@media (prefers-reduced-motion: reduce) {
+  .relatedCard {
+    transition: none;
+  }
+
+  .relatedCard:hover {
+    transform: none;
+  }
+}
+
+/* ARTICLE PAGE — RAISIN RICH GREEN */
+
+.page {
+  --blog-accent: #22C55E;
+  --blog-accent-strong: #16A34A;
+  --blog-accent-dark: #15803D;
+  --blog-visual: #F0FBF2;
+  --blog-border: #E8EEE8;
+  --blog-glow: rgba(34, 197, 94, 0.14);
 }

@@ -1,0 +1,350 @@
+﻿
+/* =========================================================
+   HackersHarbor Blog — Topic Directory Page
+   Bright green, modern, responsive design system.
+   ========================================================= */
+
+/* =========================================================
+   PAGE FOUNDATION
+   ========================================================= */
+
+   .page {
+    --blog-bg: #ffffff;
+    --blog-surface: #ffffff;
+    --blog-text: #171717;
+    --blog-muted: #686868;
+    --blog-border: #e5e7eb;
+    --blog-accent: #16a34a;
+    --blog-accent-dark: #15803d;
+    --blog-visual: #f0fdf4;
+    --blog-grid: #dcfce7;
+  
+    min-height: 100vh;
+    background: var(--blog-bg);
+    color: var(--blog-text);
+    font-family: var(--font-blog-poppins, var(--font-geist-sans, Arial, sans-serif));
+    -webkit-font-smoothing: antialiased;
+  }
+  
+  :global(html[data-theme="dark"]) .page {
+    --blog-bg: #111a14;
+    --blog-surface: #19251d;
+    --blog-text: #f2f8f3;
+    --blog-muted: #b5c3b8;
+    --blog-border: #304337;
+    --blog-accent: #62d98a;
+    --blog-accent-dark: #86efac;
+    --blog-visual: #1d3023;
+    --blog-grid: #304a37;
+  }
+  
+  /* =========================================================
+     PAGE CONTAINER
+     ========================================================= */
+  
+  .container {
+    width: min(1180px, calc(100% - 48px));
+    margin: 0 auto;
+    padding: 30px 0 100px;
+  }
+  
+  /* =========================================================
+     BREADCRUMB
+     ========================================================= */
+  
+  .breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 44px;
+    color: var(--blog-muted);
+    font-size: 12px;
+  }
+  
+  .breadcrumb a {
+    color: var(--blog-accent);
+    font-weight: 650;
+    text-decoration: none;
+    transition: color 0.2s ease;
+  }
+  
+  .breadcrumb a:hover {
+    color: var(--blog-accent-dark);
+  }
+  
+  /* =========================================================
+     DIRECTORY INTRODUCTION
+     ========================================================= */
+  
+  .intro {
+    position: relative;
+    overflow: hidden;
+    padding: 62px 64px 56px;
+    border: 1px solid var(--blog-border);
+    border-radius: 20px;
+    background:
+      radial-gradient(
+        ellipse at 88% 15%,
+        rgba(22, 163, 74, 0.13),
+        transparent 42%
+      ),
+      linear-gradient(135deg, var(--blog-visual), var(--blog-surface));
+  }
+  
+  .intro::before {
+    position: absolute;
+    top: -150px;
+    right: -100px;
+    width: 430px;
+    height: 430px;
+    border: 1px solid color-mix(
+      in srgb,
+      var(--blog-accent) 20%,
+      transparent
+    );
+    border-radius: 50%;
+    content: "";
+    pointer-events: none;
+  }
+  
+  .intro::after {
+    position: absolute;
+    top: -95px;
+    right: -45px;
+    width: 320px;
+    height: 320px;
+    border: 1px solid color-mix(
+      in srgb,
+      var(--blog-accent) 16%,
+      transparent
+    );
+    border-radius: 50%;
+    content: "";
+    pointer-events: none;
+  }
+  
+  .eyebrow,
+  .sectionEyebrow {
+    position: relative;
+    z-index: 1;
+    color: var(--blog-accent-dark);
+    font-size: 10px;
+    font-weight: 750;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+  
+  .intro h1 {
+    position: relative;
+    z-index: 1;
+    max-width: 780px;
+    margin: 22px 0 18px;
+    color: var(--blog-text);
+    font-family: var(--font-blog-poppins, var(--font-geist-sans, Arial, sans-serif));
+    font-size: clamp(42px, 5.5vw, 66px);
+    font-weight: 750;
+    letter-spacing: -0.055em;
+    line-height: 1.08;
+  }
+  
+  .intro h1 span {
+    color: var(--blog-accent);
+  }
+  
+  .intro p {
+    position: relative;
+    z-index: 1;
+    max-width: 620px;
+    margin: 0;
+    color: var(--blog-muted);
+    font-size: 15px;
+    line-height: 1.85;
+  }
+  
+  /* =========================================================
+     DIRECTORY STATISTICS
+     ========================================================= */
+  
+  .stats {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 30px;
+    margin-top: 38px;
+  }
+  
+  .stats > div:not(.statDivider) {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  
+  .stats strong {
+    color: var(--blog-text);
+    font-family: var(--font-blog-poppins, var(--font-geist-sans, Arial, sans-serif));
+    font-size: 34px;
+    font-weight: 750;
+    letter-spacing: -0.04em;
+    line-height: 1;
+  }
+  
+  .stats span {
+    color: var(--blog-muted);
+    font-size: 9px;
+    font-weight: 750;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  
+  .statDivider {
+    width: 1px;
+    height: 42px;
+    background: var(--blog-border);
+  }
+  
+  /* =========================================================
+     TOPIC DIRECTORY SECTION
+     ========================================================= */
+  
+  .directory {
+    margin-top: 76px;
+  }
+  
+  .directoryHeading {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 28px;
+  }
+  
+  .directoryHeading h2 {
+    margin: 9px 0 0;
+    color: var(--blog-text);
+    font-family: var(--font-blog-poppins, var(--font-geist-sans, Arial, sans-serif));
+    font-size: clamp(27px, 3vw, 35px);
+    font-weight: 700;
+    letter-spacing: -0.045em;
+    line-height: 1.2;
+  }
+  
+  .totalCount {
+    flex-shrink: 0;
+    padding: 8px 13px;
+    border: 1px solid var(--blog-border);
+    border-radius: 999px;
+    background: var(--blog-surface);
+    color: var(--blog-muted);
+    font-size: 12px;
+    font-weight: 650;
+  }
+  
+  /* =========================================================
+     ACCESSIBILITY
+     ========================================================= */
+  
+  .breadcrumb a:focus-visible {
+    outline: 3px solid var(--blog-accent);
+    outline-offset: 4px;
+  }
+  
+  /* =========================================================
+     TABLET
+     ========================================================= */
+  
+  @media (max-width: 800px) {
+    .intro {
+      padding: 48px 38px;
+    }
+  
+    .intro h1 {
+      font-size: clamp(38px, 6vw, 52px);
+    }
+  
+    .directory {
+      margin-top: 58px;
+    }
+  }
+  
+  /* =========================================================
+     MOBILE
+     ========================================================= */
+  
+  @media (max-width: 560px) {
+    .container {
+      width: calc(100% - 32px);
+      padding-top: 20px;
+      padding-bottom: 64px;
+    }
+  
+    .breadcrumb {
+      margin-bottom: 30px;
+    }
+  
+    .intro {
+      padding: 36px 24px;
+      border-radius: 16px;
+    }
+  
+    .intro h1 {
+      margin-top: 18px;
+      font-size: clamp(35px, 10vw, 44px);
+      letter-spacing: -0.045em;
+    }
+  
+    .intro p {
+      font-size: 13px;
+      line-height: 1.75;
+    }
+  
+    .stats {
+      gap: 22px;
+      margin-top: 30px;
+    }
+  
+    .stats strong {
+      font-size: 29px;
+    }
+  
+    .stats span {
+      font-size: 8px;
+    }
+  
+    .directory {
+      margin-top: 48px;
+    }
+  
+    .directoryHeading {
+      align-items: flex-start;
+      flex-direction: column;
+      gap: 14px;
+    }
+  
+    .directoryHeading h2 {
+      font-size: 28px;
+    }
+  }
+  
+  /* =========================================================
+     REDUCED MOTION
+     ========================================================= */
+  
+  @media (prefers-reduced-motion: reduce) {
+    .breadcrumb a {
+      transition: none;
+    }
+  }
+  
+  /* =========================================================
+     TOPIC DIRECTORY — RAISIN RICH GREEN
+     ========================================================= */
+  
+  .topicDirectory {
+    --blog-accent: #22C55E;
+    --blog-accent-strong: #16A34A;
+    --blog-accent-dark: #15803D;
+    --blog-visual: #F0FBF2;
+    --blog-border: #E8EEE8;
+  }
+  

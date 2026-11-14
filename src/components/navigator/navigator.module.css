@@ -689,3 +689,509 @@
     transition: none;
   }
 }
+
+/* =========================================================
+   NAVIGATOR — FLOATING POPUP MOTION
+   ========================================================= */
+
+.navigatorRoot {
+  position: fixed;
+  z-index: 9999;
+  right: 28px;
+  bottom: 26px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 14px;
+  isolation: isolate;
+}
+
+.panel {
+  transform-origin: bottom right;
+  animation: navigatorFloatIn 360ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+}
+
+@keyframes navigatorFloatIn {
+  0% {
+    opacity: 0;
+    transform: translate3d(12px, 20px, 0) scale(0.94);
+  }
+
+  65% {
+    opacity: 1;
+    transform: translate3d(-2px, -2px, 0) scale(1.005);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+.launcher {
+  transform-origin: bottom right;
+  transition:
+    transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 220ms ease,
+    border-color 220ms ease;
+}
+
+.launcher:active {
+  transform: scale(0.97);
+}
+
+.panel {
+  box-shadow:
+    0 32px 100px rgba(0, 0, 0, 0.48),
+    0 8px 28px rgba(0, 0, 0, 0.22),
+    0 0 0 1px rgba(164, 190, 178, 0.04);
+}
+
+@media (max-width: 600px) {
+  .navigatorRoot {
+    right: 12px;
+    bottom: 12px;
+  }
+
+  .panel {
+    transform-origin: bottom right;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel {
+    animation: none;
+    will-change: auto;
+  }
+}
+
+/* =========================================================
+   NAVIGATOR — HACKERSHARBOR DOCK THEME
+   Matches the charcoal workspace and green accents
+   ========================================================= */
+
+.navigatorRoot {
+  --nav-bg: #1f1f1f;
+  --nav-surface: #252526;
+  --nav-surface-raised: #2d2d2d;
+  --nav-border: #3b3b3b;
+  --nav-text: #d4d4d4;
+  --nav-muted: #929292;
+  --nav-accent: #10a66a;
+  --nav-accent-soft: rgba(16, 166, 106, 0.12);
+  --nav-green: #10a66a;
+  --nav-danger: #e06c75;
+
+  color: var(--nav-text);
+}
+
+/* Floating launcher */
+.launcher {
+  border: 1px solid #3b3b3b;
+  background: #252526;
+  color: #d4d4d4;
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.35);
+}
+
+.launcher:hover {
+  border-color: #10a66a;
+  background: #2d2d2d;
+  color: #10a66a;
+}
+
+/* Remove the bright launcher shine */
+.launcherGlow {
+  display: none;
+}
+
+/* Main popup */
+.panel {
+  border: 1px solid #3b3b3b;
+  background: #1f1f1f;
+  color: #d4d4d4;
+  box-shadow: 0 18px 55px rgba(0, 0, 0, 0.48);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* Header */
+.header {
+  background: #252526;
+  border-bottom: 1px solid #3b3b3b;
+}
+
+.headerIcon {
+  border-color: rgba(16, 166, 106, 0.35);
+  background: rgba(16, 166, 106, 0.10);
+  color: #10a66a;
+}
+
+.headerTitle {
+  color: #e0e0e0;
+}
+
+.headerSubtitle,
+.contextLabel {
+  color: #929292;
+}
+
+/* Buttons */
+.iconButton {
+  color: #a5a5a5;
+}
+
+.iconButton:hover {
+  border-color: #454545;
+  background: #303030;
+  color: #e0e0e0;
+}
+
+.launcher:focus-visible,
+.iconButton:focus-visible,
+.sendButton:focus-visible,
+.stopButton:focus-visible,
+.suggestion:focus-visible,
+.textarea:focus-visible {
+  outline-color: #10a66a;
+}
+
+/* Welcome section */
+.welcomeIcon {
+  border-color: rgba(16, 166, 106, 0.4);
+  background: #252526;
+}
+
+.welcomeIconInner,
+.welcomeEyebrow,
+.messageAuthor,
+.suggestionArrow {
+  color: #10a66a;
+}
+
+.welcomeTitle {
+  color: #e0e0e0;
+}
+
+.welcomeDescription {
+  color: #a0a0a0;
+}
+
+/* Suggestions */
+.suggestion {
+  border-color: #3b3b3b;
+  background: #252526;
+  color: #d4d4d4;
+}
+
+.suggestion:hover:not(:disabled) {
+  border-color: #10a66a;
+  background: rgba(16, 166, 106, 0.09);
+}
+
+/* Messages */
+.userBubble {
+  border-color: rgba(16, 166, 106, 0.3);
+  background: #17382c;
+  color: #dce9e1;
+}
+
+.assistantBubble {
+  color: #d4d4d4;
+}
+
+.messageAvatar {
+  border-color: rgba(16, 166, 106, 0.35);
+  background: #252526;
+  color: #10a66a;
+}
+
+.messageBody {
+  color: #d4d4d4;
+}
+
+.messageBody h1,
+.messageBody h2,
+.messageBody h3,
+.messageBody h4 {
+  color: #e0e0e0;
+}
+
+.messageBody li::marker {
+  color: #10a66a;
+}
+
+.messageBody a {
+  color: #42bd89;
+}
+
+.messageBody a:hover {
+  color: #70d5aa;
+}
+
+.messageBody blockquote {
+  border-left-color: #10a66a;
+  background: #252526;
+  color: #a0a0a0;
+}
+
+.messageBody :not(pre) > code {
+  background: #2d2d2d;
+  color: #70d5aa;
+}
+
+/* Code blocks */
+.codeBlock {
+  border-color: #3b3b3b;
+  background: #181818;
+  color: #d4d4d4;
+}
+
+/* Typing indicator */
+.typingBubble {
+  border-color: #3b3b3b;
+  background: #252526;
+}
+
+.typingDots i {
+  background: #10a66a;
+}
+
+/* Inputs */
+.textarea {
+  border-color: #3b3b3b;
+  background: #252526;
+  color: #e0e0e0;
+}
+
+.textarea::placeholder {
+  color: #858585;
+}
+
+.textarea:focus {
+  border-color: #10a66a;
+  outline: none;
+}
+
+/* Send and stop controls */
+.sendButton {
+  border-color: #10a66a;
+  background: #087f53;
+  color: #ffffff;
+}
+
+.sendButton:hover:not(:disabled) {
+  background: #0a9662;
+}
+
+.stopButton {
+  border-color: #454545;
+  background: #303030;
+  color: #d4d4d4;
+}
+
+/* Scrollbar */
+.messagesViewport {
+  scrollbar-color: #555555 #1f1f1f;
+}
+
+/* Keep the popup visually crisp */
+.panel,
+.header,
+.messagesViewport,
+.messagesContent,
+.welcome,
+.messageBubble,
+.suggestion,
+.textarea {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel,
+  .launcher {
+    animation: none;
+    transition: none;
+  }
+}
+
+
+/* NAVIGATOR TEXT CLARITY FIX */
+.panel {
+  animation: navigatorSharpAppear 180ms ease-out both !important;
+  will-change: auto !important;
+  backface-visibility: visible !important;
+  transform: none;
+  filter: none;
+  -webkit-filter: none;
+}
+
+@keyframes navigatorSharpAppear {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.navigatorRoot,
+.panel,
+.panel * {
+  filter: none;
+  -webkit-filter: none;
+}
+
+
+/* COMPACT COMPASS-ONLY NAVIGATOR LAUNCHER */
+.launcher {
+  width: 46px !important;
+  height: 46px !important;
+  min-width: 46px !important;
+  min-height: 46px !important;
+  padding: 0 !important;
+  gap: 0 !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #10a66a !important;
+  border-radius: 50% !important;
+  background: #252526 !important;
+  color: #10a66a !important;
+  box-shadow: 0 5px 18px rgba(0, 0, 0, 0.35);
+}
+
+.launcherLabel {
+  display: none !important;
+}
+
+.launcher svg {
+  width: 21px;
+  height: 21px;
+}
+
+.launcher:hover {
+  background: #303030 !important;
+  border-color: #20c987 !important;
+  color: #20c987 !important;
+  transform: scale(1.06);
+}
+
+
+/* SMOOTH COMPASS DRAGGING */
+.launcher {
+  will-change: transform;
+  transition:
+    transform 75ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 180ms ease,
+    border-color 180ms ease;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.launcher:active {
+  cursor: grabbing;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .launcher {
+    transition: none;
+  }
+}
+
+/* Free movement: never animate the pointer position */
+.launcher {
+  position: fixed !important;
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease !important;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  z-index: 10000;
+}
+
+.launcher {
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease !important;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  will-change: transform;
+}
+
+
+/* Navigator floating compass — fixed dimensions and safe movement */
+.launcher {
+  position: fixed !important;
+  width: 46px !important;
+  height: 46px !important;
+  min-width: 46px !important;
+  min-height: 46px !important;
+  max-width: 46px !important;
+  max-height: 46px !important;
+  box-sizing: border-box !important;
+  padding: 0 !important;
+  gap: 0 !important;
+  border-radius: 50% !important;
+  overflow: visible !important;
+  touch-action: none !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  will-change: transform;
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease !important;
+}
+
+.launcher:hover {
+  filter: brightness(1.08);
+}
+
+.launcher:active {
+  cursor: grabbing;
+}
+
+
+/* Navigator compass — screenshot-matched four-corner placement */
+.launcher {
+  position: fixed !important;
+  width: 38px !important;
+  height: 38px !important;
+  min-width: 38px !important;
+  min-height: 38px !important;
+  max-width: 38px !important;
+  max-height: 38px !important;
+  box-sizing: border-box !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  overflow: hidden !important;
+  touch-action: none !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  will-change: transform;
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease !important;
+  z-index: 10000 !important;
+}
+
+.launcher svg {
+  flex-shrink: 0;
+  transform-origin: center;
+  transition: none !important;
+}
+
+.launcher:hover {
+  filter: brightness(1.08);
+}
+
+.launcher:active {
+  cursor: grabbing;
+}

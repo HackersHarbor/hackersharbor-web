@@ -28,7 +28,7 @@ export function NavigatorHeader({
           </div>
 
           <div className={styles.headerSubtitle}>
-            Your HackersHarbor assistant
+            Your HackersHarbor AI assistant
           </div>
         </div>
       </div>
@@ -61,3 +61,4 @@ export function NavigatorHeader({
     </header>
   );
 }
+

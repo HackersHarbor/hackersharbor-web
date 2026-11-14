@@ -43,11 +43,6 @@ export function NavigatorMessages({
       <div className={styles.messagesContent}>
         {isEmpty ? (
           <div className={styles.welcome}>
-            <div className={styles.welcomeIcon}>
-              <span className={styles.welcomeIconInner}>
-                N
-              </span>
-            </div>
 
             <div className={styles.welcomeEyebrow}>
               HACKERSHARBOR INTELLIGENCE
@@ -104,3 +99,4 @@ export function NavigatorMessages({
     </div>
   );
 }
+

@@ -1,0 +1,334 @@
+
+.experience {
+    --reading-accent: var(--blog-accent, #22c55e);
+    --reading-border: var(--blog-border, #e8eee8);
+    --reading-muted: var(--blog-muted, #778277);
+    --reading-text: var(--blog-text, #202820);
+    --reading-surface: var(--blog-surface, #ffffff);
+  
+    position: relative;
+    width: 100%;
+    max-width: 1120px;
+    margin: 65px auto 0;
+  }
+  
+  /* Reading progress */
+  
+  .progressTrack {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 100;
+    width: 100%;
+    height: 3px;
+    overflow: hidden;
+    background: transparent;
+    pointer-events: none;
+  }
+  
+  .progressBar {
+    width: 0;
+    height: 100%;
+    background: var(--reading-accent);
+    transition: width 120ms linear;
+  }
+  
+  /* Main reading layout */
+  
+  .layout {
+    display: grid;
+    grid-template-columns: 175px minmax(0, 720px);
+    justify-content: center;
+    align-items: start;
+    column-gap: 65px;
+    width: 100%;
+  }
+  
+  /* Table of contents */
+  
+  .toc {
+    position: sticky;
+    top: 36px;
+    align-self: start;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    max-height: calc(100vh - 72px);
+    padding-top: 7px;
+  }
+  
+  .tocHeader {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--reading-border);
+  }
+  
+  .tocTitle {
+    color: var(--reading-text);
+    font-size: 10px;
+    font-weight: 750;
+    letter-spacing: 0.13em;
+    line-height: 1.5;
+  }
+  
+  .progressLabel {
+    color: var(--reading-accent);
+    font-size: 11px;
+    font-weight: 650;
+    letter-spacing: 0.01em;
+  }
+  
+  .tocList {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: 17px 0 0;
+    padding: 0;
+    overflow-y: auto;
+    list-style: none;
+    scrollbar-width: thin;
+    scrollbar-color: var(--reading-border) transparent;
+  }
+  
+  .tocItem,
+  .tocSubItem {
+    position: relative;
+    min-width: 0;
+  }
+  
+  .tocSubItem {
+    padding-left: 12px;
+  }
+  
+  .tocLink {
+    display: block;
+    width: 100%;
+    padding: 7px 9px;
+    border: 0;
+    border-left: 2px solid transparent;
+    border-radius: 0 4px 4px 0;
+    background: transparent;
+    color: var(--reading-muted);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 450;
+    line-height: 1.55;
+    text-align: left;
+    cursor: pointer;
+    overflow-wrap: anywhere;
+    transition:
+      color 160ms ease,
+      background-color 160ms ease,
+      border-color 160ms ease;
+  }
+  
+  .tocLink:hover {
+    color: var(--reading-text);
+    background: rgba(34, 197, 94, 0.06);
+  }
+  
+  .tocLink:focus-visible {
+    outline: 2px solid var(--reading-accent);
+    outline-offset: 2px;
+  }
+  
+  .tocLink.active {
+    border-left-color: var(--reading-accent);
+    background: rgba(34, 197, 94, 0.07);
+    color: var(--reading-text);
+    font-weight: 650;
+  }
+  
+  .tocEmpty {
+    margin: 18px 0;
+    color: var(--reading-muted);
+    font-size: 12px;
+    line-height: 1.6;
+  }
+  
+  /* Sidebar footer */
+  
+  .sidebarFooter {
+    display: flex;
+    flex-direction: column;
+    gap: 13px;
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid var(--reading-border);
+  }
+  
+  .readingTime {
+    color: var(--reading-muted);
+    font-size: 11px;
+    font-weight: 550;
+  }
+  
+  .backLink {
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    color: var(--reading-text);
+    font-size: 11px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: color 160ms ease;
+  }
+  
+  .backLink:hover {
+    color: var(--reading-accent);
+  }
+  
+  /* Article content */
+  
+  .article {
+    min-width: 0;
+    width: 100%;
+  }
+  
+  .article :global(h2),
+  .article :global(h3) {
+    scroll-margin-top: 36px;
+  }
+  
+  /* Tablet */
+  
+  @media (max-width: 1000px) {
+    .experience {
+      max-width: 900px;
+    }
+  
+    .layout {
+      grid-template-columns: 155px minmax(0, 680px);
+      column-gap: 38px;
+    }
+  }
+  
+  /* Smaller screens */
+  
+  @media (max-width: 800px) {
+    .experience {
+      margin-top: 42px;
+    }
+  
+    .layout {
+      grid-template-columns: minmax(0, 720px);
+      row-gap: 26px;
+    }
+  
+    .toc {
+      position: relative;
+      top: auto;
+      max-height: none;
+      padding: 15px 17px;
+      border: 1px solid var(--reading-border);
+      border-radius: 8px;
+      background: var(--reading-surface);
+    }
+  
+    .tocHeader {
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 12px;
+    }
+  
+    .tocList {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 5px 12px;
+      max-height: 180px;
+      margin-top: 12px;
+    }
+  
+    .tocSubItem {
+      padding-left: 8px;
+    }
+  
+    .sidebarFooter {
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 15px;
+      padding-top: 12px;
+    }
+  }
+  
+  /* Mobile */
+  
+  @media (max-width: 560px) {
+    .experience {
+      margin-top: 32px;
+    }
+  
+    .layout {
+      row-gap: 20px;
+    }
+  
+    .toc {
+      padding: 13px;
+    }
+  
+    .tocTitle {
+      font-size: 9px;
+    }
+  
+    .progressLabel {
+      font-size: 10px;
+    }
+  
+    .tocList {
+      grid-template-columns: minmax(0, 1fr);
+      max-height: 150px;
+      gap: 3px;
+    }
+  
+    .tocLink {
+      padding: 6px 8px;
+      font-size: 11px;
+    }
+  
+    .sidebarFooter {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+  
+    .article :global(h2),
+    .article :global(h3) {
+      scroll-margin-top: 24px;
+    }
+  }
+  
+  /* Dark theme */
+  
+  :global([data-theme="dark"]) .experience,
+  :global(.dark) .experience {
+    --reading-border: #29342c;
+    --reading-muted: #9aa69b;
+    --reading-text: #e7eee7;
+    --reading-surface: #151d17;
+  }
+  
+  :global([data-theme="dark"]) .tocLink:hover,
+  :global(.dark) .tocLink:hover {
+    background: rgba(34, 197, 94, 0.1);
+  }
+  
+  :global([data-theme="dark"]) .tocLink.active,
+  :global(.dark) .tocLink.active {
+    background: rgba(34, 197, 94, 0.12);
+  }
+  
+  /* Accessibility */
+  
+  @media (prefers-reduced-motion: reduce) {
+    .progressBar,
+    .tocLink,
+    .backLink {
+      transition: none;
+    }
+  }
+  

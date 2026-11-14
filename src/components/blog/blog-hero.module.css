@@ -1,0 +1,566 @@
+﻿
+/*
+ * HackersHarbor Blog Hero
+ * Bright green visual system
+ * Uses the shared --blog-* design tokens.
+ */
+
+/* =========================================================
+   HERO LAYOUT
+   ========================================================= */
+
+   .hero {
+    --hero-accent: #22c55e;
+    --hero-accent-dark: #15803d;
+    --hero-accent-light: #bbf7d0;
+  
+    position: relative;
+    box-sizing: border-box;
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+    align-items: center;
+    gap: 56px;
+    width: 100%;
+    max-width: 1344px;
+    margin: 0 auto;
+    padding: 76px 48px 84px;
+    font-family: var(--font-blog-poppins, Arial, sans-serif);
+  }
+  
+  /* =========================================================
+     LEFT: HERO COPY
+     ========================================================= */
+  
+  .heroCopy {
+    min-width: 0;
+  }
+  
+  .journalName {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 24px;
+    color: #15803d;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.025em;
+  }
+  
+  .journalName::before {
+    width: 25px;
+    height: 2px;
+    background: #16a34a;
+    content: "";
+  }
+  
+  .heroTitle {
+    max-width: 15ch;
+    margin: 0;
+    color: var(--blog-text);
+    font-family: inherit;
+    font-size: clamp(42px, 5vw, 68px);
+    font-weight: 750;
+    letter-spacing: -0.045em;
+    line-height: 1.1;
+    text-wrap: balance;
+  }
+  
+  .heroDescription {
+    max-width: 500px;
+    margin: 24px 0 0;
+    color: #475569;
+    font-family: inherit;
+    font-size: 17px;
+    font-weight: 400;
+    line-height: 1.75;
+  }
+  
+  .heroActions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    margin-top: 34px;
+  }
+  
+  .primaryButton,
+  .secondaryButton {
+    display: inline-flex;
+    min-height: 50px;
+    align-items: center;
+    justify-content: center;
+    padding: 13px 23px;
+    border: 1px solid transparent;
+    border-radius: 11px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 650;
+    text-decoration: none;
+    transition:
+      transform 0.2s ease,
+      background-color 0.2s ease,
+      border-color 0.2s ease,
+      color 0.2s ease,
+      box-shadow 0.2s ease;
+  }
+  
+  .primaryButton {
+    border-color: #15803d;
+    background: #15803d;
+    color: #ffffff;
+    box-shadow: 0 7px 18px rgba(22, 163, 74, 0.16);
+  }
+  
+  .primaryButton:hover {
+    transform: translateY(-2px);
+    border-color: #166534;
+    background: #166534;
+    box-shadow: 0 10px 22px rgba(22, 163, 74, 0.2);
+  }
+  
+  .secondaryButton {
+    border-color: var(--blog-border);
+    background: var(--blog-surface);
+    color: var(--blog-text);
+  }
+  
+  .secondaryButton:hover {
+    transform: translateY(-2px);
+    border-color: #16a34a;
+    background: var(--blog-visual);
+    color: #166534;
+  }
+  
+  .primaryButton:focus-visible,
+  .secondaryButton:focus-visible,
+  .featuredCard:focus-visible {
+    outline: 3px solid #16a34a;
+    outline-offset: 4px;
+  }
+  
+  /* =========================================================
+     RIGHT: FEATURED ARTICLE
+     ========================================================= */
+  
+  .featuredCard {
+    --cat: var(--blog-accent);
+  
+    display: block;
+    min-width: 0;
+    overflow: hidden;
+    border: 1px solid var(--blog-border);
+    border-radius: 22px;
+    background: var(--blog-surface);
+    color: inherit;
+    text-decoration: none;
+    box-shadow:
+      0 18px 45px rgba(17, 24, 19, 0.055),
+      0 3px 10px rgba(17, 24, 19, 0.025);
+    transition:
+      transform 0.25s ease,
+      border-color 0.25s ease,
+      box-shadow 0.25s ease;
+  }
+  
+  .featuredCard:hover {
+    transform: translateY(-5px);
+    border-color: color-mix(in srgb, var(--cat) 48%, var(--blog-border));
+    box-shadow:
+      0 25px 55px rgba(17, 24, 19, 0.09),
+      0 5px 15px rgba(22, 163, 74, 0.07);
+  }
+  
+  .featuredCard:hover .featuredTitle {
+    color: #15803d;
+  }
+  
+  /* =========================================================
+     FEATURED COVER ARTWORK
+     ========================================================= */
+  
+  .cover {
+    position: relative;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    background:
+      radial-gradient(
+        circle at 18% 20%,
+        color-mix(in srgb, var(--cat) 25%, transparent),
+        transparent 58%
+      ),
+      radial-gradient(
+        circle at 85% 80%,
+        rgba(134, 239, 172, 0.34),
+        transparent 48%
+      ),
+      linear-gradient(
+        135deg,
+        #f0fdf4 0%,
+        #dcfce7 52%,
+        #f7fef8 100%
+      );
+  }
+  
+  .coverImage {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+  }
+  
+  .coverGrid {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(
+        rgba(22, 163, 74, 0.1) 1px,
+        transparent 1px
+      ),
+      linear-gradient(
+        90deg,
+        rgba(22, 163, 74, 0.1) 1px,
+        transparent 1px
+      );
+    background-size: 36px 36px;
+    -webkit-mask-image: linear-gradient(
+      135deg,
+      transparent 12%,
+      #000 100%
+    );
+    mask-image: linear-gradient(
+      135deg,
+      transparent 12%,
+      #000 100%
+    );
+  }
+  
+  .coverGlyph {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    z-index: 1;
+    color: color-mix(in srgb, var(--cat) 76%, #ffffff);
+    font-family:
+      ui-monospace,
+      "JetBrains Mono",
+      SFMono-Regular,
+      Menlo,
+      Consolas,
+      monospace;
+    font-size: clamp(64px, 9vw, 112px);
+    font-weight: 800;
+    letter-spacing: -0.08em;
+    line-height: 1;
+    user-select: none;
+    white-space: nowrap;
+    transform: translate(-50%, -50%);
+  }
+  
+  /* =========================================================
+     FEATURED ARTICLE BODY
+     ========================================================= */
+  
+  .featuredBody {
+    padding: 28px 30px 27px;
+  }
+  
+  .featuredCategory {
+    display: inline-flex;
+    align-items: center;
+    min-height: 28px;
+    padding: 5px 12px;
+    border: 1px solid color-mix(
+      in srgb,
+      var(--cat) 30%,
+      transparent
+    );
+    border-radius: 999px;
+    background: color-mix(
+      in srgb,
+      var(--cat) 10%,
+      var(--blog-surface)
+    );
+    color: color-mix(
+      in srgb,
+      var(--cat) 65%,
+      #14251a
+    );
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 750;
+  }
+  
+  .featuredTitle {
+    margin: 15px 0 0;
+    color: var(--blog-text);
+    font-family: inherit;
+    font-size: clamp(23px, 2.3vw, 31px);
+    font-weight: 750;
+    letter-spacing: -0.045em;
+    line-height: 1.23;
+    transition: color 0.2s ease;
+  }
+  
+  .featuredExcerpt {
+    display: -webkit-box;
+    margin: 12px 0 0;
+    overflow: hidden;
+    color: #475569;
+    font-family: inherit;
+    font-size: 14px;
+    line-height: 1.7;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+  }
+  
+  .featuredMeta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px 20px;
+    margin-top: 22px;
+    padding-top: 17px;
+    border-top: 1px solid var(--blog-border);
+    color: #475569;
+    font-family: inherit;
+    font-size: 12px;
+  }
+  
+  .featuredMeta span {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+  }
+  
+  /* =========================================================
+     DARK THEME SUPPORT
+     ========================================================= */
+  
+  :global(html[data-theme="dark"]) .journalName {
+    color: #86efac;
+  }
+  
+  :global(html[data-theme="dark"]) .heroDescription,
+  :global(html[data-theme="dark"]) .featuredExcerpt,
+  :global(html[data-theme="dark"]) .featuredMeta {
+    color: #c1cec4;
+  }
+  
+  :global(html[data-theme="dark"]) .primaryButton {
+    border-color: #22c55e;
+    background: #16a34a;
+    color: #ffffff;
+  }
+  
+  :global(html[data-theme="dark"]) .primaryButton:hover {
+    border-color: #4ade80;
+    background: #15803d;
+  }
+  
+  :global(html[data-theme="dark"]) .secondaryButton:hover {
+    color: #bbf7d0;
+  }
+  
+  :global(html[data-theme="dark"]) .featuredCategory {
+    border-color: color-mix(
+      in srgb,
+      var(--cat) 45%,
+      transparent
+    );
+    background: color-mix(
+      in srgb,
+      var(--cat) 18%,
+      var(--blog-surface)
+    );
+    color: #d1fae5;
+  }
+  
+  :global(html[data-theme="dark"]) .featuredCard:hover .featuredTitle {
+    color: #86efac;
+  }
+  
+  :global(html[data-theme="dark"]) .cover {
+    background:
+      radial-gradient(
+        circle at 18% 20%,
+        color-mix(in srgb, var(--cat) 28%, transparent),
+        transparent 58%
+      ),
+      radial-gradient(
+        circle at 85% 80%,
+        rgba(74, 222, 128, 0.12),
+        transparent 48%
+      ),
+      linear-gradient(
+        135deg,
+        #17291d 0%,
+        #1b3524 52%,
+        #17251b 100%
+      );
+  }
+  
+  :global(html[data-theme="dark"]) .coverGrid {
+    background-image:
+      linear-gradient(
+        rgba(134, 239, 172, 0.1) 1px,
+        transparent 1px
+      ),
+      linear-gradient(
+        90deg,
+        rgba(134, 239, 172, 0.1) 1px,
+        transparent 1px
+      );
+  }
+  
+  /* =========================================================
+     TABLET RESPONSIVE
+     ========================================================= */
+  
+  @media (max-width: 960px) {
+    .hero {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 44px;
+      padding-top: 60px;
+      padding-bottom: 64px;
+    }
+  
+    .heroCopy {
+      max-width: 760px;
+    }
+  
+    .heroTitle {
+      max-width: 14ch;
+      font-size: clamp(48px, 7vw, 72px);
+    }
+  
+    .heroDescription {
+      max-width: 580px;
+    }
+  
+    .featuredCard {
+      width: 100%;
+      max-width: 720px;
+    }
+  }
+  
+  /* =========================================================
+     MOBILE RESPONSIVE
+     ========================================================= */
+  
+  @media (max-width: 760px) {
+    .hero {
+      gap: 34px;
+      padding: 48px 20px 54px;
+    }
+  
+    .journalName {
+      margin-bottom: 18px;
+      font-size: 13px;
+    }
+  
+    .heroTitle {
+      max-width: 13ch;
+      font-size: clamp(40px, 9vw, 58px);
+      letter-spacing: -0.055em;
+    }
+  
+    .heroDescription {
+      margin-top: 18px;
+      font-size: 16px;
+      line-height: 1.7;
+    }
+  
+    .heroActions {
+      gap: 10px;
+      margin-top: 26px;
+    }
+  
+    .primaryButton,
+    .secondaryButton {
+      min-height: 48px;
+      padding: 12px 18px;
+      font-size: 13px;
+    }
+  
+    .featuredCard {
+      border-radius: 18px;
+    }
+  
+    .featuredBody {
+      padding: 22px 22px 24px;
+    }
+  
+    .featuredTitle {
+      font-size: 25px;
+    }
+  
+    .featuredExcerpt {
+      font-size: 13px;
+    }
+  
+    .coverGlyph {
+      font-size: 76px;
+    }
+  }
+  
+  /* =========================================================
+     SMALL MOBILE
+     ========================================================= */
+  
+  @media (max-width: 420px) {
+    .hero {
+      padding-top: 38px;
+      padding-bottom: 44px;
+    }
+  
+    .heroTitle {
+      font-size: 40px;
+    }
+  
+    .heroActions {
+      align-items: stretch;
+      flex-direction: column;
+    }
+  
+    .heroActions a {
+      width: 100%;
+    }
+  
+    .featuredBody {
+      padding: 20px;
+    }
+  
+    .featuredTitle {
+      font-size: 22px;
+    }
+  
+    .featuredMeta {
+      gap: 9px 14px;
+      font-size: 11px;
+    }
+  }
+  
+  /* =========================================================
+     MOTION ACCESSIBILITY
+     ========================================================= */
+  
+  @media (prefers-reduced-motion: reduce) {
+    .featuredCard,
+    .primaryButton,
+    .secondaryButton,
+    .featuredTitle {
+      transition: none;
+    }
+  
+    .featuredCard:hover,
+    .primaryButton:hover,
+    .secondaryButton:hover {
+      transform: none;
+    }
+  }
+  

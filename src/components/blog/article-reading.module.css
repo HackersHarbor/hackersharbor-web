@@ -1,5 +1,12 @@
-﻿.content {
+
+/*
+ * HackersHarbor Blog — Article Reading Content
+ * Consistent editorial typography and green accent system.
+ */
+
+ .content {
   color: var(--blog-text);
+  font-family: var(--blog-sans, var(--font-sans, "Inter", system-ui, sans-serif));
   font-size: 15px;
   line-height: 1.85;
   overflow-wrap: anywhere;
@@ -9,27 +16,85 @@
   margin-top: 0;
 }
 
+/* =========================================================
+   HEADINGS
+   ========================================================= */
+
+.content h1,
+.content h2,
+.content h3,
+.content h4 {
+  color: var(--blog-text);
+  font-family: var(--blog-serif, var(--font-serif, "Fraunces", Georgia, serif));
+  font-weight: 650;
+  line-height: 1.3;
+}
+
+.content h1 {
+  margin: 48px 0 18px;
+  font-size: 32px;
+  letter-spacing: -0.9px;
+}
+
 .content h2 {
   margin: 42px 0 15px;
-  color: var(--blog-text);
   font-size: 25px;
-  font-weight: 680;
-  line-height: 1.3;
   letter-spacing: -0.65px;
 }
 
 .content h3 {
   margin: 30px 0 12px;
-  color: var(--blog-text);
+  font-family: var(--blog-sans, var(--font-sans, "Inter", system-ui, sans-serif));
   font-size: 19px;
   font-weight: 650;
   line-height: 1.4;
 }
 
+.content h4 {
+  margin: 25px 0 10px;
+  font-family: var(--blog-sans, var(--font-sans, "Inter", system-ui, sans-serif));
+  font-size: 16px;
+  font-weight: 700;
+}
+
+/* =========================================================
+   PARAGRAPHS AND INLINE TEXT
+   ========================================================= */
+
 .content p {
   margin: 0 0 19px;
   color: var(--blog-muted);
 }
+
+.content strong {
+  color: var(--blog-text);
+  font-weight: 700;
+}
+
+.content em {
+  color: var(--blog-text);
+}
+
+.content del {
+  opacity: 0.7;
+}
+
+.content a {
+  color: var(--blog-accent);
+  font-weight: 550;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  transition: opacity 150ms ease;
+}
+
+.content a:hover {
+  opacity: 0.75;
+}
+
+/* =========================================================
+   LISTS
+   ========================================================= */
 
 .content ul,
 .content ol {
@@ -47,23 +112,22 @@
   color: var(--blog-accent);
 }
 
-.content strong {
-  color: var(--blog-text);
-  font-weight: 650;
+.content li > ul,
+.content li > ol {
+  margin-top: 9px;
+  margin-bottom: 10px;
 }
 
-.content a {
-  color: var(--blog-accent);
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
+/* =========================================================
+   CODE BLOCKS
+   ========================================================= */
 
 .content pre {
   margin: 24px 0 28px;
   padding: 22px 24px;
   overflow-x: auto;
   border: 1px solid var(--blog-border);
-  border-radius: 9px;
+  border-radius: 10px;
   background: var(--blog-code-bg, #151b18);
   color: #e3eee7;
   font-family: var(--font-mono, "Consolas", monospace);
@@ -83,19 +147,93 @@
 .content :not(pre) > code {
   padding: 3px 6px;
   border: 1px solid var(--blog-border);
-  border-radius: 4px;
-  background: var(--blog-surface);
+  border-radius: 5px;
+  background: var(--blog-visual, var(--blog-surface));
   color: var(--blog-accent);
   font-family: var(--font-mono, "Consolas", monospace);
   font-size: 0.88em;
 }
 
+/* =========================================================
+   BLOCKQUOTES
+   ========================================================= */
+
 .content blockquote {
   margin: 25px 0;
-  padding: 5px 0 5px 20px;
+  padding: 7px 0 7px 20px;
   border-left: 3px solid var(--blog-accent);
   color: var(--blog-muted);
 }
+
+.content blockquote p:last-child {
+  margin-bottom: 0;
+}
+
+/* =========================================================
+   TABLES
+   ========================================================= */
+
+.content table {
+  display: block;
+  width: 100%;
+  margin: 25px 0 30px;
+  overflow-x: auto;
+  border-collapse: collapse;
+  border: 1px solid var(--blog-border);
+  border-radius: 8px;
+  color: var(--blog-muted);
+  font-size: 13px;
+}
+
+.content thead {
+  background: var(--blog-visual, var(--blog-surface));
+}
+
+.content th,
+.content td {
+  min-width: 110px;
+  padding: 12px 15px;
+  border-bottom: 1px solid var(--blog-border);
+  text-align: left;
+  vertical-align: top;
+}
+
+.content th {
+  color: var(--blog-text);
+  font-weight: 700;
+}
+
+.content tr:last-child td {
+  border-bottom: 0;
+}
+
+/* =========================================================
+   IMAGES AND FIGURES
+   ========================================================= */
+
+.content img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 28px auto;
+  border: 1px solid var(--blog-border);
+  border-radius: 10px;
+}
+
+.content figure {
+  margin: 28px 0;
+}
+
+.content figcaption {
+  margin-top: 10px;
+  color: var(--blog-muted);
+  font-size: 11px;
+  text-align: center;
+}
+
+/* =========================================================
+   HORIZONTAL RULE
+   ========================================================= */
 
 .content hr {
   margin: 35px 0;
@@ -103,9 +241,29 @@
   border-top: 1px solid var(--blog-border);
 }
 
+/* =========================================================
+   ACCESSIBILITY
+   ========================================================= */
+
+.content a:focus-visible {
+  outline: 3px solid var(--blog-accent);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
 @media (max-width: 640px) {
   .content {
     font-size: 14px;
+    line-height: 1.8;
+  }
+
+  .content h1 {
+    margin-top: 38px;
+    font-size: 27px;
   }
 
   .content h2 {
@@ -113,8 +271,84 @@
     font-size: 22px;
   }
 
+  .content h3 {
+    margin-top: 25px;
+    font-size: 17px;
+  }
+
   .content pre {
+    margin: 20px -4px 24px;
     padding: 17px;
+    border-radius: 8px;
     font-size: 12px;
+  }
+
+  .content th,
+  .content td {
+    padding: 10px 12px;
+  }
+
+  .content blockquote {
+    padding-left: 15px;
+  }
+}
+
+/* =========================================================
+   REDUCED MOTION
+   ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  .content a {
+    transition: none;
+  }
+}
+
+/* ARTICLE READING — TYPOGRAPHY */
+
+.content {
+  font-family: var(--font-blog-poppins, Arial, sans-serif);
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.85;
+}
+
+.content h2 {
+  font-family: inherit;
+  font-size: 27px;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: -0.035em;
+}
+
+.content h3 {
+  font-family: inherit;
+  font-size: 21px;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+.content p,
+.content li,
+.content blockquote {
+  font-family: inherit;
+  font-size: 16px;
+  line-height: 1.85;
+}
+
+.content strong {
+  font-weight: 650;
+}
+
+@media (max-width: 640px) {
+  .content {
+    font-size: 15px;
+  }
+
+  .content h2 {
+    font-size: 23px;
+  }
+
+  .content h3 {
+    font-size: 19px;
   }
 }

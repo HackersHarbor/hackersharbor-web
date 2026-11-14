@@ -1,4 +1,5 @@
-﻿export function formatArticleDate(
+﻿
+export function formatArticleDate(
   dateValue: string | Date | null | undefined
 ): string {
   if (!dateValue) {

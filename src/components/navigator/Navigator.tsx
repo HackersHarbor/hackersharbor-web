@@ -1,10 +1,14 @@
-﻿"use client";
+﻿
+"use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 import { supabase } from "@/lib/supabase";
-import { createNavigatorContext, getNavigatorPageName } from "@/lib/navigator/navigator-context";
+import {
+  createNavigatorContext,
+  getNavigatorPageName,
+} from "@/lib/navigator/navigator-context";
 import { useNavigator } from "@/hooks/useNavigator";
 
 import { NavigatorLauncher } from "./NavigatorLauncher";
@@ -14,9 +18,9 @@ import styles from "./navigator.module.css";
 
 export default function Navigator() {
   const pathname = usePathname();
+  const router = useRouter();
 
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [authChecked, setAuthChecked] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
 
   const pageContext = useMemo(() => {
@@ -34,30 +38,46 @@ export default function Navigator() {
   useEffect(() => {
     let active = true;
 
-    const checkSession = async () => {
-      const { data, error } = await supabase.auth.getSession();
-
-      if (!active) return;
-
-      setIsAuthenticated(!error && Boolean(data.session));
-      setAuthChecked(true);
-    };
-
-    void checkSession();
-
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!active) return;
 
-      setIsAuthenticated(Boolean(session));
-      setAuthChecked(true);
+      const authenticated = Boolean(session);
 
-      if (!session) {
+      setIsAuthenticated(authenticated);
+
+      if (!authenticated) {
         setIsOpen(false);
         navigator.clearConversation();
       }
     });
+
+    const checkSession = async () => {
+      try {
+        const { data, error } = await supabase.auth.getSession();
+
+        if (!active) return;
+
+        if (error) {
+          console.error("Navigator session check failed:", error);
+          setIsAuthenticated(false);
+          setIsOpen(false);
+          return;
+        }
+
+        setIsAuthenticated(Boolean(data.session));
+      } catch (error) {
+        console.error("Navigator session check failed:", error);
+
+        if (active) {
+          setIsAuthenticated(false);
+          setIsOpen(false);
+        }
+      }
+    };
+
+    void checkSession();
 
     return () => {
       active = false;
@@ -69,25 +89,36 @@ export default function Navigator() {
     navigator.setContext(pageContext);
   }, [pageContext, navigator.setContext]);
 
-  const handleOpen = useCallback(() => {
-    setIsOpen(true);
-  }, []);
+  const handleOpen = useCallback(async () => {
+    try {
+      const { data, error } = await supabase.auth.getSession();
+
+      if (error || !data.session) {
+        setIsAuthenticated(false);
+        setIsOpen(false);
+        router.push("/login");
+        return;
+      }
+
+      setIsAuthenticated(true);
+      setIsOpen(true);
+    } catch (error) {
+      console.error("Could not open Navigator:", error);
+      setIsOpen(false);
+    }
+  }, [router]);
 
   const handleClose = useCallback(() => {
     setIsOpen(false);
   }, []);
 
-  if (!authChecked || !isAuthenticated) {
-    return null;
-  }
-
   return (
     <div className={styles.navigatorRoot}>
-      {!isOpen && (
+      {isAuthenticated && !isOpen && (
         <NavigatorLauncher onClick={handleOpen} />
       )}
 
-      {isOpen && (
+      {isOpen && isAuthenticated && (
         <NavigatorPanel
           messages={navigator.messages}
           isLoading={navigator.isLoading}

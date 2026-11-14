@@ -1,180 +1,448 @@
-﻿.blogPage {
-  --blog-bg: #0b100d;
-  --blog-surface: #101712;
-  --blog-text: #edf3ee;
-  --blog-muted: #929d95;
-  --blog-border: #25332a;
-  --blog-accent: #8cce9a;
-  --blog-visual: #111e16;
-  --blog-grid: #34533d;
-  --blog-glow: rgba(111, 203, 132, .2);
+
+.blogPage {
+  --blog-bg: #ffffff;
+  --blog-surface: #ffffff;
+  --blog-text: #171717;
+  --blog-muted: #686868;
+  --blog-border: #e5e7eb;
+
+  --blog-accent: #16a34a;
+  --blog-accent-ink: #ffffff;
+
+  --blog-brand: #15803d;
+  --blog-brand-ink: #ffffff;
+  --blog-brand-accent: #86efac;
+
+  --blog-visual: #f0fdf4;
+  --blog-grid: #dcfce7;
+  --blog-glow: rgba(22, 163, 74, 0.12);
+
+  --blog-radius: 18px;
+  --blog-serif: var(--font-blog-poppins, var(--font-geist-sans, Arial, sans-serif));
+  --blog-sans: var(--font-blog-poppins, var(--font-geist-sans, Arial, sans-serif));
 
   min-height: 100vh;
   color: var(--blog-text);
   background: var(--blog-bg);
+  font-family: var(--blog-sans);
+  -webkit-font-smoothing: antialiased;
 }
 
+:global(html[data-theme="dark"]) .blogPage {
+  --blog-bg: #101812;
+  --blog-surface: #17231b;
+  --blog-text: #f4f7f4;
+  --blog-muted: #b5c1b8;
+  --blog-border: #304337;
+
+  --blog-accent: #4ade80;
+  --blog-accent-ink: #102017;
+
+  --blog-brand: #166534;
+  --blog-brand-ink: #f4fff6;
+  --blog-brand-accent: #a7f3d0;
+
+  --blog-visual: #1d3023;
+  --blog-grid: #304a37;
+  --blog-glow: rgba(74, 222, 128, 0.14);
+}
+
+/* =========================================================
+   SECTION LAYOUT
+   ========================================================= */
+
 .categorySection,
-.latestSection,
-.newsletterSection {
+.latestSection {
+  width: 100%;
   max-width: 1344px;
   margin: 0 auto;
-  padding-left: 48px;
   padding-right: 48px;
+  padding-left: 48px;
 }
 
 .categorySection {
-  padding-top: 80px;
-  padding-bottom: 65px;
+  padding-top: 72px;
+  padding-bottom: 56px;
   border-bottom: 1px solid var(--blog-border);
 }
 
 .latestSection {
-  padding-top: 70px;
-  padding-bottom: 90px;
+  padding-top: 64px;
+  padding-bottom: 80px;
 }
 
 .sectionHeading {
   display: flex;
+  align-items: flex-end;
   justify-content: space-between;
-  align-items: end;
-  gap: 25px;
-  margin-bottom: 27px;
+  gap: 24px;
+  margin-bottom: 32px;
 }
 
 .sectionEyebrow {
   color: var(--blog-accent);
-  font-size: 9px;
-  font-weight: 850;
-  letter-spacing: 1.8px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
 }
 
 .sectionHeading h2,
-.newsletterSection h2 {
-  margin: 11px 0 0;
-  font-size: clamp(26px, 3vw, 37px);
-  letter-spacing: -1.3px;
-  line-height: 1.2;
+.newsletterBody h2 {
+  margin: 8px 0 0;
+  color: var(--blog-text);
+  font-family: var(--blog-sans);
+  font-size: clamp(30px, 3.4vw, 44px);
+  font-weight: 700;
+  letter-spacing: -0.045em;
+  line-height: 1.12;
 }
 
 .sectionDescription {
-  max-width: 300px;
+  max-width: 340px;
   color: var(--blog-muted);
-  font-size: 11px;
-  line-height: 1.8;
+  font-size: 15px;
+  line-height: 1.65;
   text-align: right;
 }
+
+/* =========================================================
+   CATEGORY CHIPS
+   ========================================================= */
 
 .categoryList {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 9px;
+  gap: 10px;
 }
 
 .categoryLink,
 .categoryActive {
-  padding: 10px 15px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 9px 18px;
   border: 1px solid var(--blog-border);
-  border-radius: 5px;
-  color: var(--blog-muted);
+  border-radius: 999px;
+  background: var(--blog-surface);
+  color: var(--blog-text);
+  font-family: var(--blog-sans);
+  font-size: 14px;
+  font-weight: 600;
   text-decoration: none;
-  font-size: 11px;
-  font-weight: 650;
-  transition: .2s ease;
+  white-space: nowrap;
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s ease;
 }
 
-.categoryLink:hover,
-.categoryActive {
+.categoryLink:hover {
+  transform: translateY(-1px);
   border-color: var(--blog-accent);
-  background: rgba(140, 206, 154, .09);
   color: var(--blog-accent);
 }
+
+.categoryActive {
+  border-color: var(--blog-accent);
+  background: var(--blog-accent);
+  color: var(--blog-accent-ink);
+}
+
+.categoryActive:hover {
+  border-color: var(--blog-accent);
+  background: var(--blog-accent);
+  color: var(--blog-accent-ink);
+}
+
+/* =========================================================
+   KEYBOARD ACCESSIBILITY
+   ========================================================= */
+
+.categoryLink:focus-visible,
+.categoryActive:focus-visible,
+.newsletterLink:focus-visible,
+.newsletterInput:focus-visible,
+.newsletterButton:focus-visible {
+  outline: 3px solid var(--blog-accent);
+  outline-offset: 3px;
+}
+
+/* =========================================================
+   ARTICLE GRID
+   ========================================================= */
 
 .articleGrid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 32px 25px;
+  align-items: stretch;
+  gap: 40px 28px;
 }
 
 .emptyState {
-  padding: 35px 0;
+  padding: 40px 0;
   color: var(--blog-muted);
-  font-size: 13px;
+  font-size: 16px;
+  line-height: 1.6;
 }
 
+/* =========================================================
+   NEWSLETTER SECTION
+   ========================================================= */
+
 .newsletterSection {
-  margin-bottom: 80px;
-  padding-top: 44px;
-  padding-bottom: 44px;
-  border-top: 1px solid var(--blog-border);
-  border-bottom: 1px solid var(--blog-border);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 30px;
+  gap: 40px;
+
+  width: calc(100% - 96px);
+  max-width: 1248px;
+  margin: 0 auto 96px;
+  padding: 56px;
+
+  border: 1px solid color-mix(
+    in srgb,
+    var(--blog-brand-ink) 9%,
+    transparent
+  );
+  border-radius: 24px;
+
+  background: linear-gradient(
+    125deg,
+    #15803d 0%,
+    #16a34a 58%,
+    #22c55e 100%
+  );
+
+  color: #ffffff;
+  box-shadow: 0 20px 55px rgba(22, 163, 74, 0.16);
 }
 
-.newsletterSection h2 {
-  max-width: 580px;
+.newsletterBody {
+  min-width: 0;
 }
 
+.newsletterBody h2 {
+  max-width: 560px;
+  margin-top: 0;
+  color: #ffffff;
+}
+
+.newsletterBody p,
 .newsletterSection p {
-  max-width: 510px;
-  color: var(--blog-muted);
-  font-size: 12px;
-  line-height: 1.8;
+  max-width: 520px;
+  margin: 14px 0 0;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 16px;
+  line-height: 1.7;
 }
+
+/* =========================================================
+   NEWSLETTER FORM
+   ========================================================= */
+
+.newsletterForm {
+  display: flex;
+  flex-shrink: 0;
+  gap: 10px;
+  width: min(100%, 440px);
+}
+
+.newsletterInput {
+  flex: 1;
+  min-width: 0;
+  min-height: 50px;
+  padding: 14px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  font: inherit;
+  font-size: 15px;
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.newsletterInput::placeholder {
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.newsletterInput:focus {
+  border-color: var(--blog-brand-accent);
+  outline: none;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.newsletterButton {
+  min-height: 50px;
+  padding: 14px 22px;
+  border: 0;
+  border-radius: 12px;
+  background: #dcfce7;
+  color: #14532d;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    filter 0.2s ease,
+    transform 0.2s ease;
+}
+
+.newsletterButton:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.04);
+}
+
+.newsletterButton:disabled {
+  transform: none;
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.newsletterNote {
+  margin-top: 10px;
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 13px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+/* =========================================================
+   NEWSLETTER LINK
+   ========================================================= */
 
 .newsletterLink {
   display: inline-flex;
-  align-items: center;
-  gap: 15px;
   flex-shrink: 0;
-  color: var(--blog-accent);
+  align-items: center;
+  gap: 12px;
+  padding: 13px 20px;
+  border: 1px solid rgba(255, 255, 255, 0.38);
+  border-radius: 999px;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 700;
   text-decoration: none;
-  font-size: 12px;
-  font-weight: 750;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s ease;
 }
 
-.newsletterLink span {
-  font-size: 20px;
+.newsletterLink:hover {
+  transform: translateX(3px);
+  background: #ffffff;
+  color: #15803d;
 }
 
-@media (prefers-color-scheme: light) {
-  .blogPage {
-    --blog-bg: #f7f9f6;
-    --blog-surface: #ffffff;
-    --blog-text: #18231b;
-    --blog-muted: #68746b;
-    --blog-border: #e1e8e1;
-    --blog-accent: #287b43;
-    --blog-visual: #e8f0e8;
-    --blog-grid: #c7ddcb;
-    --blog-glow: rgba(40, 123, 67, .12);
+/* =========================================================
+   NEWSLETTER ACTION LAYOUT
+   Retained for the existing newsletter action component.
+   ========================================================= */
+
+.newsletterAction {
+  display: flex;
+  flex: 0 1 480px;
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+  min-width: 0;
+  gap: 0;
+}
+
+.newsletterAction .newsletterForm {
+  width: 100%;
+  flex-shrink: 1;
+}
+
+.newsletterAction .newsletterInput {
+  min-height: 50px;
+}
+
+.newsletterAction .newsletterInput:focus {
+  border-color: var(--blog-brand-accent);
+  outline: none;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.newsletterAction .newsletterButton {
+  min-height: 50px;
+  white-space: nowrap;
+}
+
+.newsletterAction .newsletterButton:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.newsletterAction .newsletterNote {
+  margin: 12px 0 0;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.newsletterAction .newsletterLink {
+  align-self: flex-start;
+  margin-top: 18px;
+}
+
+.newsletterAction .newsletterLink:hover {
+  color: #ffffff;
+}
+
+/* =========================================================
+   TABLET RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 1020px) {
+  .articleGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .newsletterSection {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .newsletterForm {
+    width: 100%;
+  }
+
+  .newsletterAction {
+    flex: 0 1 auto;
+    max-width: 560px;
   }
 }
+
+/* =========================================================
+   MOBILE RESPONSIVE
+   ========================================================= */
 
 @media (max-width: 760px) {
   .categorySection,
-  .latestSection,
-  .newsletterSection {
-    padding-left: 19px;
-    padding-right: 19px;
+  .latestSection {
+    padding-right: 20px;
+    padding-left: 20px;
   }
 
   .categorySection {
-    padding-top: 55px;
-    padding-bottom: 45px;
+    padding-top: 48px;
+    padding-bottom: 40px;
   }
 
   .latestSection {
-    padding-top: 50px;
-    padding-bottom: 60px;
+    padding-top: 48px;
+    padding-bottom: 56px;
   }
 
   .sectionHeading {
-    align-items: start;
+    align-items: flex-start;
     flex-direction: column;
     gap: 10px;
   }
@@ -183,14 +451,196 @@
     text-align: left;
   }
 
+  .categoryList {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    margin: 0 -20px;
+    padding: 0 20px 6px;
+    scrollbar-width: none;
+  }
+
+  .categoryList::-webkit-scrollbar {
+    display: none;
+  }
+
+  .categoryLink,
+  .categoryActive {
+    flex-shrink: 0;
+  }
+
   .articleGrid {
-    grid-template-columns: 1fr;
-    gap: 35px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 36px;
   }
 
   .newsletterSection {
-    align-items: start;
+    width: calc(100% - 40px);
+    margin-bottom: 56px;
+    padding: 32px 24px;
+    border-radius: 20px;
+  }
+
+  .newsletterForm {
     flex-direction: column;
-    margin-bottom: 50px;
+  }
+
+  .newsletterAction {
+    max-width: none;
+  }
+
+  .newsletterAction .newsletterForm {
+    flex-direction: column;
+  }
+
+  .newsletterAction .newsletterInput,
+  .newsletterAction .newsletterButton {
+    width: 100%;
+    min-height: 50px;
+  }
+
+  .newsletterAction .newsletterLink {
+    margin-top: 16px;
+  }
+}
+
+/* =========================================================
+   SMALL MOBILE
+   ========================================================= */
+
+@media (max-width: 420px) {
+  .sectionHeading h2,
+  .newsletterBody h2 {
+    font-size: clamp(28px, 8vw, 34px);
+  }
+
+  .newsletterSection {
+    padding: 28px 20px;
+  }
+
+  .newsletterButton {
+    width: 100%;
+  }
+}
+
+/* =========================================================
+   REDUCED MOTION
+   ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  .categoryLink,
+  .categoryActive,
+  .newsletterButton,
+  .newsletterLink,
+  .newsletterInput {
+    transition: none;
+  }
+
+  .categoryLink:hover,
+  .newsletterButton:hover,
+  .newsletterLink:hover {
+    transform: none;
+  }
+}
+
+/* ==================================================
+   HACKERSHARBOR BLOG — RAISIN RICH GREEN PALETTE
+   ================================================== */
+
+   .blogPage {
+    --blog-accent: #22C55E;
+    --blog-accent-strong: #16A34A;
+    --blog-accent-dark: #15803D;
+    --blog-accent-light: #BBF7D0;
+    --blog-bg: #FFFFFF;
+    --blog-surface: #FFFFFF;
+    --blog-visual: #F0FBF2;
+    --blog-text: #191919;
+    --blog-muted: #625F59;
+    --blog-border: #E8EEE8;
+    --blog-glow: rgba(34, 197, 94, 0.14);
+  }
+  
+  .blogPage a:focus-visible,
+  .blogPage button:focus-visible {
+    outline-color: #22C55E;
+  }
+
+  /* =====================================================
+   HACKERSHARBOR BLOG — GLOBAL TYPOGRAPHY ALIGNMENT
+   ===================================================== */
+
+.blogPage {
+  font-family: var(--font-blog-poppins, Arial, sans-serif);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+.blogPage h1,
+.blogPage h2,
+.blogPage h3,
+.blogPage h4,
+.blogPage h5,
+.blogPage h6,
+.blogPage p,
+.blogPage a,
+.blogPage button,
+.blogPage input,
+.blogPage textarea,
+.blogPage select,
+.blogPage label,
+.blogPage span {
+  font-family: inherit;
+}
+
+.blogPage h1 {
+  font-size: clamp(38px, 4.5vw, 60px);
+  font-weight: 750;
+  line-height: 1.12;
+  letter-spacing: -0.045em;
+}
+
+.blogPage h2 {
+  font-size: clamp(29px, 3vw, 40px);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.035em;
+}
+
+.blogPage h3 {
+  font-size: clamp(19px, 2vw, 24px);
+  font-weight: 650;
+  line-height: 1.35;
+  letter-spacing: -0.02em;
+}
+
+.blogPage p {
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.75;
+}
+
+.blogPage button,
+.blogPage input,
+.blogPage textarea,
+.blogPage select {
+  font-size: inherit;
+}
+
+@media (max-width: 640px) {
+  .blogPage h1 {
+    font-size: clamp(32px, 9vw, 42px);
+  }
+
+  .blogPage h2 {
+    font-size: clamp(25px, 7vw, 32px);
+  }
+
+  .blogPage h3 {
+    font-size: 19px;
+  }
+
+  .blogPage p {
+    font-size: 14px;
+    line-height: 1.7;
   }
 }
